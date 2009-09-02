@@ -1156,7 +1156,6 @@ label_24b5:
   if (current_duck >= num_ducks) /* 0x24c1 */
     return;
   /* Move little duck.  */
-  RAM[0x88] = current_duck;
   tmp = RAM[0x0414 + current_duck];
   if (tmp == 1) /* 0x24cb */
     goto label_25ef;

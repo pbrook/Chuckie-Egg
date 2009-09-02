@@ -7,6 +7,20 @@
 
 #define NUM_PLAYERS 1
 
+int current_player;
+int current_level;
+int eggs_left;
+int bonus_hold;
+int have_big_duck;
+int big_duck_sprite;
+uint8_t big_duck_x;
+int big_duck_dx;
+uint8_t big_duck_y;
+int big_duck_dy;
+int num_ducks;
+int current_duck;
+int duck_speed;
+
 #include "ram.c"
 #define LD2(addr) (RAM[addr] | (RAM[(addr) + 1] << 8))
 
@@ -94,8 +108,6 @@ label_1e62:
   return;
 }
 
-#define G_Player RAM[0x5d]
-
 static void Do_RenderDigit(int x, int y, int n)
 {
     Do_RenderSprite(x, y, n + 0x1f, 2);
@@ -107,16 +119,16 @@ static void do_1cc3(void)
   int tmp;
 
   Do_RenderSprite(0, 0xf8, 0x29, 2); /* 0x1cd3 */
-  tmp = G_Player * 0x22 + 0x1b;
+  tmp = current_player * 0x22 + 0x1b;
   Do_RenderSprite(tmp, 0xf8, 0x2a, 2); /* 0x1cee */
   for (tmp = 0; tmp < RAM[0x5e]; tmp++) {
       DrawLives(tmp);
   }
   Do_RenderSprite(0, 0xe8, 0x2b, 2); /* 0x1d10 */
-  Do_RenderSprite(0x1b, 0xe7, G_Player + 0x20, 2); /* 0x1d22 */
+  Do_RenderSprite(0x1b, 0xe7, current_player + 0x20, 2); /* 0x1d22 */
   Do_RenderSprite(0x24, 0xe8, 0x2c, 2); /* 0x1d31 */
 
-  tmp = RAM[0x50] + 1;
+  tmp = current_level + 1;
   RAM[0x8d] = tmp % 10;
   tmp /= 10;
   RAM[0x8c] = tmp % 10;
@@ -191,9 +203,11 @@ static void do_1b38(void)
   addr = LD2(0x0cc0 + (RAM[0x5c] << 1));
   RAM[0x51] = addr & 0xff;
   RAM[0x52] = addr >> 8;
-  for (i = 0; i < 5; i++) {
-      RAM[0x53 + i] = RAM[addr + i];
-  }
+  RAM[0x53] = RAM[addr];
+  RAM[0x54] = RAM[addr + 1];
+  RAM[0x55] = RAM[addr + 2];
+  RAM[0x56] = RAM[addr + 3];
+  num_ducks = RAM[addr + 4];
   offset = 5;
   /* 0x1b64 */
   for (i = 0; i < 0x200; i++)
@@ -245,7 +259,7 @@ label_1bc6:
 
   /* 0c1ca0 */
   RAM[0x8a] = 0;
-  RAM[0x39] = 0;
+  eggs_left = 0;
   RAM[0x88] = RAM[0x4e];
 label_1c18:
   RAM[0x8b] = RAM[addr + offset++];
@@ -254,7 +268,7 @@ label_1c18:
   if (tmp == 0) {
       tmp = (RAM[0x8a] << 4) + 4;
       Do_InitTile(RAM[0x8b], RAM[0x8c], 3, tmp, 1);
-      RAM[0x39]++;
+      eggs_left++;
   }
   RAM[0x88]++;
   RAM[0x8a]++;
@@ -278,7 +292,7 @@ label_1c5d:
     goto label_1c5d;
 
   /* 0x1c94 */
-  Do_RenderSprite(0, 0xdc, RAM[0x35] ? 0x14 : 0x13, 4); /* 0x1caa */
+  Do_RenderSprite(0, 0xdc, have_big_duck ? 0x14 : 0x13, 4); /* 0x1caa */
 
   /* 0x1cad */
   for (i = 0; i < 5 ; i++) { /* 0x1cc0 */
@@ -287,10 +301,10 @@ label_1c5d:
   }
 }
 
-/* DrawPlayer */
-static void do_2336(int n)
+/* DrawBigDuck */
+static void DrawBigDuck(void)
 {
-  Do_RenderSprite(RAM[0x30], RAM[0x31], n + 0x0f, 4);
+  Do_RenderSprite(big_duck_x, big_duck_y, big_duck_sprite + 0x0f, 4);
 }
 
 /* DrawDuck */
@@ -318,7 +332,7 @@ static void do_2324(int sprite)
 static void do_2f5a(void)
 {
   int tmp;
-  tmp = RAM[0x20 + RAM[0x5d]];
+  tmp = RAM[0x20 + current_player];
   if (tmp >= 9) /* 0x2f64 */
       return;
   tmp = (tmp << 2) + RAM[0x3f] + 0xa;
@@ -335,20 +349,21 @@ static void do_2e92(void)
       Do_RenderSprite(RAM[0x58], RAM[0x59], 5, 1); /* 0x2eb2 */
       Do_RenderSprite(RAM[0x58], RAM[0x5a], 5, 1); /* 0x2ec1 */
   }
-  RAM[0x30] = 4;
-  RAM[0x31] = 0xcc;
-  RAM[0x32] = RAM[0x33] = RAM[0x34] = 0;
-  do_2336(0); /* 0x2ed4 */
+  big_duck_x = 4;
+  big_duck_y = 0xcc;
+  big_duck_dx = big_duck_dy = 0;
+  big_duck_sprite = 0;
+  DrawBigDuck();
   if (RAM[0x4D] == 1) { /* 0x2edf */
-      RAM[0x57] = 0;
+      num_ducks = 0;
   }
   if (RAM[0x4D] == 3) { /* 0x2ee7 */
-      RAM[0x57] = 5;
+      num_ducks = 5;
   }
   i = -1;
 label_2eed:
   i++;
-  if (i < RAM[0x57]) { /* 0x2ef3 */
+  if (i < num_ducks) { /* 0x2ef3 */
       RAM[0x0400 + i] = RAM[0x040a + i] << 3;
       RAM[0x0405 + i] = (RAM[0x040f + i] << 3) + 0x14;
       RAM[0x0414 + i] = 0;
@@ -843,7 +858,7 @@ label_21ed:
       if (tmp != 0) /* 0x220d */
 	goto label_2248;
       /* Got egg */
-      RAM[0x39]--;
+      eggs_left--;
       /* 0x2211 */
       /* BEEP(6) */
       /* 0x221f */
@@ -852,7 +867,7 @@ label_21ed:
       x = RAM[0x42];
       y = RAM[0x89];
       do_22fe(x, y); /* 0x2230 */
-      tmp = (RAM[0x50] >> 2) + 1;
+      tmp = (current_level >> 2) + 1;
       if (tmp >= 0x0a) /* 0x223c */
 	tmp = 0x0a;
       x = 5;
@@ -870,7 +885,7 @@ label_2248:
       tmp = 5;
       x = 6;
       do_1ab5(x, tmp); /* 0x226e */
-      RAM[0x1c] = 14;
+      bonus_hold = 14;
 label_2275:
       return; /* 0x2275 */
   } else {
@@ -1079,6 +1094,7 @@ static void do_2407(void)
   int y;
   int x;
   int flag;
+  int duck_look;
 
   /* Big Duck.  */
   RAM[0x38]++;
@@ -1091,69 +1107,63 @@ static void do_2407(void)
     goto label_269d;
   goto label_24b5;
 label_2420:
-  RAM[0x8b] = RAM[0x34] & 2;
-  if (RAM[0x35] == 0) /* 0x2428 */
+  duck_look = big_duck_sprite & 2;
+  if (!have_big_duck) /* 0x2428 */
     goto label_2494;
-  tmp = (uint8_t)(RAM[0x30] + 4);
+  tmp = (uint8_t)(big_duck_x + 4);
   if (tmp >= RAM[0x40]) /* 0x2431 */
     goto label_2444;
-  RAM[0x32]++;
-  if (((RAM[0x32] - 6) & 0x80) == 0) /* 0x2439 */
-    RAM[0x32]--;
-  RAM[0x8b] = 0;
+  if (big_duck_dx < 5)
+    big_duck_dx++;
+  duck_look = 0;
   goto label_2452; /* 0x2441 */
 label_2444:
-  RAM[0x32]--;
-  if (((RAM[0x32] - 0xfb) & 0x80) != 0)  /* 0x244a */
-    RAM[0x32]++;
-  RAM[0x8b] = 2;
+  if (big_duck_dx > -5)
+    big_duck_dx--;
+  duck_look = 2;
 label_2452:
   tmp = RAM[0x41] + 4;
-  if (tmp < RAM[0x31]) /* 0x2459 */
+  if (tmp < big_duck_y) /* 0x2459 */
     goto label_2468;
-  RAM[0x33]++;
-  if (((RAM[0x33] - 6) & 0x80) == 0)  /* 0x2461 */
-    RAM[0x33]--;
+  if (big_duck_dy < 5)
+    big_duck_dy++;
   goto label_2472;
 label_2468:
-  RAM[0x33]--;
-  if (((RAM[0x33] - 0xfb) & 0x80) != 0)  /* 0x246e */
-    RAM[0x33]++;
+  if (big_duck_dy > -5)
+    big_duck_dy--;
 label_2472:
-  tmp = (uint8_t)(RAM[0x31] + RAM[0x33]);
+  tmp = (uint8_t)(big_duck_y + big_duck_dy);
   if (tmp >= 0x28) /* 0x2479 */
     goto label_2483;
-  RAM[0x33] = ~RAM[0x33] + 1;
+  big_duck_dy = -big_duck_dy;
 label_2483:
-  tmp = (uint8_t)(RAM[0x30] + RAM[0x32]);
+  tmp = (uint8_t)(big_duck_x + big_duck_dx);
   if (tmp < 0x90) /* 0x248a */
     goto label_2494;
-  RAM[0x32] = ~RAM[0x32] + 1;
+  big_duck_dx = -big_duck_dx;
 label_2494:
-  do_2336(RAM[0x34]); /* 0x2496 */
-  RAM[0x30] += RAM[0x32];
-  RAM[0x31] += RAM[0x33];
-  RAM[0x34] = ((RAM[0x34] & 1) ^ 1) | RAM[0x8b];
-  do_2336(RAM[0x34]); /* 0x24b1 */
+  DrawBigDuck();
+  big_duck_x += big_duck_dx;
+  big_duck_y += big_duck_dy;
+  big_duck_sprite = (~big_duck_sprite & 1) | duck_look;
+  DrawBigDuck();
   return;
 label_24b5:
-  RAM[0x36]--;
-  x = RAM[0x36];
-  if ((x & 0x80) != 0) { /* 0x24b9 */
-      x = RAM[0x37];
-      RAM[0x36] = x;
-  }
-  if (x >= RAM[0x57]) /* 0x24c1 */
+  if (current_duck == 0)
+    current_duck = duck_speed;
+  else
+    current_duck--;
+  if (current_duck >= num_ducks) /* 0x24c1 */
     return;
   /* Move little duck.  */
-  RAM[0x88] = x;
-  tmp = RAM[0x0414 + x];
+  RAM[0x88] = current_duck;
+  tmp = RAM[0x0414 + current_duck];
   if (tmp == 1) /* 0x24cb */
     goto label_25ef;
   if (tmp >= 1) /* 0x24d0 */
     goto label_25b6;
-  RAM[0x8b] = RAM[0x040a + x];
-  RAM[0x8c] = RAM[0x040f + x];
+  RAM[0x8b] = RAM[0x040a + current_duck];
+  RAM[0x8c] = RAM[0x040f + current_duck];
   RAM[0x8d] = 0;
   x = RAM[0x8b] - 1;
   y = RAM[0x8c] - 1;
@@ -1177,12 +1187,10 @@ label_24b5:
     RAM[0x8d] |= 4;
   x = do_25a9(); /* 0x252a */
   if (x == 1) { /* 0x252f */
-      x = RAM[0x88];
-      RAM[0x041e + x] = RAM[0x8d];
+      RAM[0x041e + current_duck] = RAM[0x8d];
       goto label_257b; /* 0x2535 */
   }
-  x = RAM[0x88];
-  tmp = RAM[0x041e + x];
+  tmp = RAM[0x041e + current_duck];
   if (tmp < 4) { /* 0x2542 */
       tmp ^= 0xfc;
   } else {
@@ -1191,8 +1199,7 @@ label_24b5:
   RAM[0x8d] &= tmp;
   x = do_25a9(); /* 0x254f */
   if (x == 1) { /* 0x2554 */
-      x = RAM[0x88];
-      RAM[0x041e + x] = RAM[0x8d];
+      RAM[0x041e + current_duck] = RAM[0x8d];
       goto label_257b; /* 0x255d */
   }
   RAM[0x8e] = RAM[0x8d];
@@ -1202,11 +1209,9 @@ label_2564:
   x = do_25a9(); /* 0x256d */
   if (x != 1) /* 0x2572 */
     goto label_2564;
-  x = RAM[0x88];
-  RAM[0x041e + x] = RAM[0x8d];
+  RAM[0x041e + current_duck] = RAM[0x8d];
 label_257b:
-  x = RAM[0x88];
-  tmp = RAM[0x041e + x];
+  tmp = RAM[0x041e + current_duck];
   tmp &= 3;
   if (tmp == 0) /* 0x2582 */
     goto label_25ef;
@@ -1225,16 +1230,15 @@ label_259b:
   tmp &= 8;
   if (tmp == 0)
     goto label_25ef;
-  x = RAM[0x88];
   tmp = 2;
-  RAM[0x0414 + x] = tmp;
+  RAM[0x0414 + current_duck] = tmp;
   goto label_25ef; /* 0x25a6 */
 label_25b6:
   if (tmp != 4)
     goto label_25ef;
-  tmp = RAM[0x041e + x];
-  RAM[0x8b] = RAM[0x040a + x];
-  y = RAM[0x040f + x];
+  tmp = RAM[0x041e + current_duck];
+  RAM[0x8b] = RAM[0x040a + current_duck];
+  y = RAM[0x040f + current_duck];
   RAM[0x8c] = y;
   x = RAM[0x8b] - 1;
   tmp &= 1;
@@ -1254,73 +1258,71 @@ label_25b6:
   y = RAM[0x8c];
   do_2311(x, y); /* 0x25ec */
 label_25ef:
-  do_234b(RAM[0x88]);
-  x = RAM[0x88];
-  tmp = RAM[0x0414 + x];
+  do_234b(current_duck);
+  tmp = RAM[0x0414 + current_duck];
   if (tmp >= 2) /* 0x25f9 */
     goto label_2675;
-  tmp = RAM[0x041e + x];
+  tmp = RAM[0x041e + current_duck];
   if ((tmp & 1) != 0) /* 0x25ff */
     goto label_2633;
   if ((tmp & 2) != 0) /* 0x2602 */
     goto label_2649;
   if ((tmp & 4) != 0) /* 0x2605 */
     goto label_261d;
-  RAM[0x0405 + x] -= 4;
-  tmp = RAM[0x0414 + x];
+  RAM[0x0405 + current_duck] -= 4;
+  tmp = RAM[0x0414 + current_duck];
   if (tmp != 0) /* 0x2613 */
-    RAM[0x040f + x]--;
+    RAM[0x040f + current_duck]--;
   tmp = 4;
   goto label_265f;
 label_261d:
-  RAM[0x0405 + x] += 4;
-  tmp = RAM[0x0414 + x];
+  RAM[0x0405 + current_duck] += 4;
+  tmp = RAM[0x0414 + current_duck];
   if (tmp != 0) /* 0x2629 */
-    RAM[0x040f + x]++;
+    RAM[0x040f + current_duck]++;
   tmp = 4;
   goto label_265f;
 label_2633:
-  RAM[0x0400 + x] -= 4;
-  tmp = RAM[0x0414 + x];
+  RAM[0x0400 + current_duck] -= 4;
+  tmp = RAM[0x0414 + current_duck];
   if (tmp != 0) /* 0x263f */
-    RAM[0x040a + x]--;
+    RAM[0x040a + current_duck]--;
   tmp = 2;
   goto label_265f;
 label_2649:
-  RAM[0x0400 + x] += 4;
-  tmp = RAM[0x0414 + x];
+  RAM[0x0400 + current_duck] += 4;
+  tmp = RAM[0x0414 + current_duck];
   if (tmp != 0) /* 0x263f */
-    RAM[0x040a + x]++;
+    RAM[0x040a + current_duck]++;
   tmp = 0;
   goto label_265f;
 label_265f:
-  y = RAM[0x0414 + x] ^ 1;
-  RAM[0x0414 + x] = y;
+  y = RAM[0x0414 + current_duck] ^ 1;
+  RAM[0x0414 + current_duck] = y;
   tmp += y;
-  RAM[0x0419 + x] = tmp;
-  do_234b(x);
+  RAM[0x0419 + current_duck] = tmp;
+  do_234b(current_duck);
   return;
 label_2675:
-  tmp = RAM[0x0414 + x] << 1;
+  tmp = RAM[0x0414 + current_duck] << 1;
   tmp &= 0x1f;
-  RAM[0x0414 + x] = tmp;
+  RAM[0x0414 + current_duck] = tmp;
   if (tmp != 0)
     tmp = 6;
-  y = RAM[0x041e + x];
+  y = RAM[0x041e + current_duck];
   if (y == 1) /* 0x2687 */
     tmp += 2;
-  y = RAM[0x0414 + x];
+  y = RAM[0x0414 + current_duck];
   if (y == 8) /* 0x2691 */
     tmp++;
-  RAM[0x0419 + x] = tmp;
-  do_234b(x);
+  RAM[0x0419 + current_duck] = tmp;
+  do_234b(current_duck);
   return;
 label_269d:
   /* Update bonus/timer.  */
-  tmp = RAM[0x1c];
-  if (tmp != 0) { /* 0x26a3 */
-      RAM[0x1c]--;
-      return; /* 0x26a7 */
+  if (bonus_hold) {
+      bonus_hold--;
+      return;
   }
   RAM[0x88] = 2;
 label_26ac:
@@ -1369,7 +1371,7 @@ static void do_2f49(void)
     return;
   RAM[0x3e] = 0;
   do_2f5a();
-  RAM[0x20 + RAM[0x5d]]++;
+  RAM[0x20 + current_player]++;
 }
 
 /* CollisionDetect */
@@ -1378,7 +1380,7 @@ static void do_2728(void)
   int x;
   int tmp;
   /* Little ducks */
-  if (RAM[0x57] == 0)
+  if (num_ducks == 0)
     goto label_2758;
   x = 0;
 label_2730:
@@ -1392,16 +1394,16 @@ label_2730:
   RAM[0x4f]++;
 label_2750:
   x++;
-  if (x < RAM[0x57])
+  if (x < num_ducks)
     goto label_2730;
 label_2758:
   /* Big duck */
-  if (RAM[0x35] == 0)
+  if (!have_big_duck)
     return;
-  tmp = (uint8_t)(RAM[0x30] + 4 - RAM[0x40] + 5);
+  tmp = (uint8_t)(big_duck_x + 4 - RAM[0x40] + 5);
   if (tmp >= 0x0b) /* 0x2769 */
     return;
-  tmp = (uint8_t)(RAM[0x31] - 5 - RAM[0x41] + 0x0e);
+  tmp = (uint8_t)(big_duck_y - 5 - RAM[0x41] + 0x0e);
   if (tmp >= 0x1d) /* 0x2777 */
     return;
   RAM[0x4f]++;
@@ -1434,8 +1436,8 @@ static void do_2e6b(void)
 {
   int x;
   int i;
-  x = RAM[0x5d];
-  RAM[0x24 + x] = RAM[0x50];
+  x = current_player;
+  RAM[0x24 + x] = current_level;
   x = RAM[0x4e];
   for (i = 0; i < 8; i++) /* 0x2e7f */
     RAM[0x28 + i] = RAM[0x0500 + x + i];
@@ -1447,8 +1449,8 @@ static void do_2dfe(void)
 {
   int a, b;
   int i;
-  a = RAM[0x50] + 1;
-  b = RAM[0x5d] << 6;
+  a = current_level + 1;
+  b = current_player << 6;
   if (a >= 10)
     a = 9;
   RAM[0x0508 + b] = a;
@@ -1466,9 +1468,9 @@ static void do_2e2d(void)
   int player;
   int level;
   int o, y;
-  player = RAM[0x5d];
+  player = current_player;
   level = RAM[0x24 + player];
-  RAM[0x50] = level;
+  current_level = level;
   o = (player << 6) & 0xff;
   RAM[0x4e] = o;
   for (y = 0; y < 8; y++) {
@@ -1493,7 +1495,7 @@ static int do_29f0(void)
     goto label_2a39;
   if (RAM[0x41] < 0x11)
     goto label_2a39;
-  if (RAM[0x39] == 0) /* 0x29fc */
+  if (eggs_left == 0) /* 0x29fc */
     goto label_2a05;
   if ((RAM[0x60] & 0x80) != 0) /* 0x2a00 */
     goto label_29ae;
@@ -1516,7 +1518,7 @@ label_2a09:
     goto label_2a09;
 label_2a2b:
   /* Advance to next level */
-  RAM[0x50]++;
+  current_level++;
   do_2e6b(); /* 0x2a2d */
   do_2dfe();
   do_2e2d();
@@ -1525,7 +1527,7 @@ label_2a39:
   /* Died */
   do_2e6b();
   do_2f7c(0x2fa6); /* 0x2a40 */
-  tmp = --RAM[0x20 + RAM[0x5d]];
+  tmp = --RAM[0x20 + current_player];
   if (tmp != 0)
     goto label_2a70;
   /* Clear Screen */
@@ -1536,11 +1538,11 @@ label_2a39:
     goto label_2a87;
 label_2a70:
   /* Select next player. */
-  tmp = RAM[0x5d];
+  tmp = current_player;
   do {
       tmp = (tmp + 1) & 3;
   } while (tmp >= RAM[0x5e] || RAM[0x20 + tmp] == 0);
-  RAM[0x5d] = tmp;
+  current_player = tmp;
   do_2e2d(); /* 0x2a81 */
   return 0x29b4;
 label_2a87:
@@ -1566,7 +1568,7 @@ void start_game()
       }
   }
   for (i = 3; i >= 0; i--) {
-      RAM[0x5d] = i;
+      current_player = i;
       do_2dfe();
   }
   do_2e2d();
@@ -1577,16 +1579,16 @@ static void SetupLevel(void)
 {
   int arg;
 
-  arg = RAM[0x50];
+  arg = current_level;
   RAM[0x5c] = arg & 7;
   RAM[0x4d] = arg >> 3;
-  RAM[0x35] = (arg > 7);
+  have_big_duck = (arg > 7);
   RAM[0x38] = 0;
   RAM[0x36] = 0;
-  RAM[0x37] = (arg < 32) ? 8 : 5;
+  duck_speed = (arg < 32) ? 8 : 5;
   RAM[0x3e] = 0;
   RAM[0x4f] = 0;
-  RAM[0x1c] = 0;
+  bonus_hold = 0;
   RAM[0x66] = 0x76;
   RAM[0x67] = 0x76;
   RAM[0x68] = 0x76;

@@ -5,8 +5,11 @@
 0x31 Big Duck Y
 0x32 Big Duck dX
 0x33 Big Duck dY
+0x34 Big duck frame
+0x35 Big duck active
+0x36 Current duck
 0x37 Duck Speed
-0x38 Dig Duck Active
+0x38 Dig Duck timer
 0x39 Eggs left
 0x3d Start next level
 0x3e Extra life

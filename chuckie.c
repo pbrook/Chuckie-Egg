@@ -156,23 +156,6 @@ label_1cf5:
   Do_RenderDigit(0x9b, 0xe7, 0); /* 0x1deb */
 }
 
-static int do_23ed(void) /* ??? Unused ??? */
-{
-  int tmp;
-  int flag;
-  flag = 0;
-  tmp = YReg;
-  tmp = (tmp << 2) + tmp;
-  if (tmp & 0x400)
-    flag = 1;
-  tmp &= 0xff;
-  XReg += tmp;
-  if (XReg > 0xff)
-    return 1;
-  return flag;
-
-}
-
 /* WriteScreen? */
 static void do_23e0(int x, int y, int a)
 {

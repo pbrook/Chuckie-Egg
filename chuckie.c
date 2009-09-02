@@ -37,6 +37,16 @@ uint8_t lives[4];
 uint8_t level[4];
 uint8_t levelmap[0x200];
 
+typedef struct {
+    uint8_t score[8];
+    uint8_t bonus[4];
+    uint8_t egg[16];
+    uint8_t grain[16];
+} playerdata_t;
+
+playerdata_t all_player_data[4];
+#define player_data (&all_player_data[current_player])
+
 #include "ram.c"
 #define LD2(addr) (RAM[addr] | (RAM[(addr) + 1] << 8))
 
@@ -100,8 +110,9 @@ static void DrawLives(int player)
   int x = 0x1b + 0x22 * player;
   int i;
 
-  for (i = 0; i < 6; i++)
-      Do_RenderDigit(x + 1 + i * 5, 0xf7, RAM[0x0506 + (player << 6) - i]);
+  for (i = 0; i < 6; i++) {
+      Do_RenderDigit(x + 1 + i * 5, 0xf7, all_player_data[player].score[i + 2]);
+  }
 
   i = lives[player];
   if (i > 8)
@@ -174,8 +185,7 @@ static void Do_InitTile(int x, int y, int sprite, int n, int color)
     Do_RenderSprite(x << 3, (y << 3) | 7, sprite, color);
 }
 
-/* InitLevel? */
-static void do_1b38(void)
+static void LoadLevel(void)
 {
   int addr;
   int i;
@@ -245,37 +255,19 @@ label_1bc6:
   }
 
   /* 0c1ca0 */
-  RAM[0x8a] = 0;
   eggs_left = 0;
-  RAM[0x88] = RAM[0x4e];
-label_1c18:
-  RAM[0x8b] = RAM[addr + offset++];
-  RAM[0x8c] = RAM[addr + offset++];
-  tmp = RAM[0x0510 + RAM[0x88]];
-  if (tmp == 0) {
-      tmp = (RAM[0x8a] << 4) + 4;
-      Do_InitTile(RAM[0x8b], RAM[0x8c], 3, tmp, 1);
+  for (i = 0; i < 0xc; i++) {
+      x = RAM[addr + offset++];
+      y = RAM[addr + offset++];
+      Do_InitTile(x, y, 3, (i << 4) | 4, 1);
       eggs_left++;
   }
-  RAM[0x88]++;
-  RAM[0x8a]++;
-  if (RAM[0x8a] < 0xc) /* 0x1c4f */
-    goto label_1c18;
-  RAM[0x8a] = 0;
-  RAM[0x88] = RAM[0x4e];
 
-label_1c5d:
-  RAM[0x8b] = RAM[addr + offset++];
-  RAM[0x8c] = RAM[addr + offset++];
-  tmp = RAM[0x0520 + RAM[0x89]];
-  if (tmp == 0) { /* 0x1c70 */
-      tmp = (RAM[0x8a] << 4) + 8;
-      Do_InitTile(RAM[0x8b], RAM[0x8c], 4, tmp, 2);
+  for (i = 0; i < RAM[0x56]; i++) {
+      x = RAM[addr + offset++];
+      y = RAM[addr + offset++];
+      Do_InitTile(x, y, 4, (i << 4) | 8, 2);
   }
-  RAM[0x88]++;
-  RAM[0x8a]++;
-  if (RAM[0x8a] < RAM[0x56]) /* 0x1c92 */
-    goto label_1c5d;
 
   /* 0x1c94 */
   Do_RenderSprite(0, 0xdc, have_big_duck ? 0x14 : 0x13, 4); /* 0x1caa */
@@ -847,8 +839,8 @@ label_21ed:
       /* 0x2211 */
       /* BEEP(6) */
       /* 0x221f */
-      tmp = (RAM[0x88] >> 4) + RAM[0x4e];
-      RAM[0x0510 + tmp]--;
+      tmp = (RAM[0x88] >> 4);
+      player_data->egg[tmp]--;
       x = RAM[0x42];
       y = RAM[0x89];
       do_22fe(x, y); /* 0x2230 */
@@ -862,8 +854,8 @@ label_2248:
       /* Got grain */
       /* BEEP(5) */
       /* 0x2256 */
-      tmp = (RAM[0x88] >> 4) + RAM[0x4e];
-      RAM[0x0520 + tmp]--;
+      tmp = (RAM[0x88] >> 4);
+      player_data->grain[tmp]--;
       x = RAM[0x42];
       y = RAM[0x89];
       do_2311(x, y); /* 0x2267 */
@@ -1237,9 +1229,9 @@ label_25b6:
   if ((tmp & 8) == 0) /* 0x25d9 */
     goto label_25ef;
   tmp = RAM[0x89];
-  tmp = (tmp >> 4) + RAM[0x4e];
+  tmp = (tmp >> 4);
   x = tmp;
-  RAM[0x0520 + x]--;
+  player_data->grain[x]--;
   x = RAM[0x8d];
   y = RAM[0x8c];
   do_2311(x, y); /* 0x25ec */
@@ -1378,17 +1370,14 @@ label_2758:
   is_dead++;
 }
 
-/* ResetLevel? */
-static void do_2e6b(void)
+static void SavePlayerState(void)
 {
-  int x;
   int i;
   level[current_player] = current_level;
-  x = RAM[0x4e];
   for (i = 0; i < 8; i++) /* 0x2e7f */
-    RAM[0x28 + i] = RAM[0x0500 + x + i];
+    player_data->score[i] = RAM[0x28 + i];
   for (i = 0; i < 4; i++) /* 0x2e8f */
-    bonus[i] = RAM[0x0508 + x + i];
+    player_data->bonus[i] = bonus[i];
 }
 
 static void do_2dfe(void)
@@ -1399,30 +1388,26 @@ static void do_2dfe(void)
   b = current_player << 6;
   if (a >= 10)
     a = 9;
-  RAM[0x0508 + b] = a;
-  RAM[0x0509 + b] = 0;
-  RAM[0x050a + b] = 0;
-  RAM[0x050b + b] = 0;
-  for (i = 0x10; i > 0; i--) {
-      RAM[0x0510 + b + i] = 0;
-      RAM[0x0520 + b + i] = 0;
+  player_data->bonus[0] = a;
+  player_data->bonus[1] = 0;
+  player_data->bonus[2] = 0;
+  player_data->bonus[3] = 0;
+  for (i = 0; i < 16; i++) {
+      player_data->egg[i] = 0;
+      player_data->grain[i] = 0;
   }
 }
 
 static void do_2e2d(void)
 {
-  int player;
-  int o, y;
-  player = current_player;
-  current_level = level[current_player];
-  o = (player << 6) & 0xff;
-  RAM[0x4e] = o;
-  for (y = 0; y < 8; y++) {
-      RAM[0x28 + y] = RAM[0x0500 + o + y];
-  }
-  for (y = 0; y < 4; y++) {
-      bonus[y] = RAM[0x0508 + o + y];
-  }
+    int y;
+    current_level = level[current_player];
+    for (y = 0; y < 8; y++) {
+	RAM[0x28 + y] = player_data->score[y];
+    }
+    for (y = 0; y < 4; y++) {
+	bonus[y] = player_data->bonus[y];
+    }
 }
 
 static void do_2f7c(int addr)
@@ -1462,13 +1447,13 @@ label_2a09:
 label_2a2b:
   /* Advance to next level */
   current_level++;
-  do_2e6b(); /* 0x2a2d */
+  SavePlayerState(); /* 0x2a2d */
   do_2dfe();
   do_2e2d();
   return 0x29cf;
 label_2a39:
   /* Died */
-  do_2e6b();
+  SavePlayerState();
   do_2f7c(0x2fa6); /* 0x2a40 */
   tmp = --lives[current_player];
   if (tmp != 0)
@@ -1501,15 +1486,13 @@ void start_game()
 {
   int i, j;
   num_players = active_players = NUM_PLAYERS;
-  for (i = 0; i < 0x100; i += 0x40) {
-      for (j = 0; j < 8; j++) {
-	RAM[0x0500 + i + j] = 0;
-      }
-  }
   for (i = 3; i >= 0; i--) {
       current_player = i;
       lives[i] = 5;
       level[i] = 0;
+      for (j = 0; j < 8; j++) {
+	  player_data->score[j] = 0;
+      }
       do_2dfe();
   }
   do_2e2d();
@@ -1612,7 +1595,7 @@ next_player:
 next_level:
   SetupLevel();
   ClearScreen();
-  do_1b38();
+  LoadLevel();
   StartLevel();
 next_frame:
   PollKeys();

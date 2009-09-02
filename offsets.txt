@@ -9,9 +9,10 @@
 0x35 Big duck active
 0x36 Current duck
 0x37 Duck Speed
-0x38 Dig Duck timer
+0x38 Big Duck timer
 0x39 Eggs left
-0x3d Start next level
+0x3a-0x3c  Level timer
+0x3d Start level
 0x3e Extra life
 0x40 Player X
 0x41 Player Y
@@ -45,3 +46,5 @@
 0x405+N Duck Y
 0x414+N Duck mode
 0x41e+N Duck direction
+0x0500+0x40*N - Player data
+ 2-6 Score

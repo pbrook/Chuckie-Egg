@@ -7,11 +7,17 @@
 
 #define NUM_PLAYERS 1
 
+int is_dead;
+int start_level;
+int extra_life;
+int num_players;
+int active_players;
 int current_player;
 int current_level;
 int eggs_left;
 int bonus_hold;
 int have_big_duck;
+int duck_timer;
 int big_duck_sprite;
 uint8_t big_duck_x;
 int big_duck_dx;
@@ -20,6 +26,8 @@ int big_duck_dy;
 int num_ducks;
 int current_duck;
 int duck_speed;
+uint8_t bonus[3];
+uint8_t timer_ticks[3];
 
 #include "ram.c"
 #define LD2(addr) (RAM[addr] | (RAM[(addr) + 1] << 8))
@@ -74,44 +82,28 @@ static void Do_RenderSprite(int x, int y, int sprite, int color)
     }
 }
 
-static void DrawLives(int player)
-{
-  int tmp;
-  RAM[0x8b] = 0x22 * player + 0x1b;
-  RAM[0x8d] = (player << 6) + 2;
-  RAM[0x8c] = RAM[0x8b] + 1;
-  RAM[0x8e] = 6;
-label_1e16:
-  Do_RenderSprite(RAM[0x8c], 0xf7, RAM[0x0500 + RAM[0x8d]] + 0x1f, 2); /* 0x1e1f */
-  RAM[0x8c] += 5;
-  RAM[0x8d]++;
-  RAM[0x8e]--;
-  if (RAM[0x8e] != 0) /* 0x1e2d */
-    goto label_1e16;
-  tmp = RAM[player + 0x20];
-  if (tmp == 0)
-  if (tmp == 0)  /* 0x1e37 */
-    goto label_1e62;
-  if (tmp > 8) { /* 0x1e3f */
-      tmp = 8;
-  }
-  RAM[0x8e] = tmp;
-  RAM[0x8c] = RAM[0x8b];
-label_1e45:
-  Do_RenderSprite(RAM[0x8c], 0xee, 0x2f, 4);
-  RAM[0x8e]--;
-  if (RAM[0x8e] == 0) /* 0x1e56 */
-    goto label_1e62;
-  RAM[0x8c] += 4;
-  goto label_1e45;
-label_1e62:
-  return;
-}
-
 static void Do_RenderDigit(int x, int y, int n)
 {
     Do_RenderSprite(x, y, n + 0x1f, 2);
 }
+
+static void DrawLives(int player)
+{
+  int x = 0x1b + 0x22 * player;
+  int i;
+
+  for (i = 0; i < 6; i++)
+      Do_RenderDigit(x + 1 + i * 5, 0xf7, RAM[0x0506 + (player << 6) - i]);
+
+  i = RAM[0x20 + player];
+  if (i > 8)
+    i = 8;
+  while (i--) {
+    Do_RenderSprite(x, 0xee, 0x2f, 4);
+    x += 4;
+  }
+}
+
 
 /* DrawStatics? */
 static void do_1cc3(void)
@@ -121,7 +113,7 @@ static void do_1cc3(void)
   Do_RenderSprite(0, 0xf8, 0x29, 2); /* 0x1cd3 */
   tmp = current_player * 0x22 + 0x1b;
   Do_RenderSprite(tmp, 0xf8, 0x2a, 2); /* 0x1cee */
-  for (tmp = 0; tmp < RAM[0x5e]; tmp++) {
+  for (tmp = 0; tmp < num_players; tmp++) {
       DrawLives(tmp);
   }
   Do_RenderSprite(0, 0xe8, 0x2b, 2); /* 0x1d10 */
@@ -129,34 +121,29 @@ static void do_1cc3(void)
   Do_RenderSprite(0x24, 0xe8, 0x2c, 2); /* 0x1d31 */
 
   tmp = current_level + 1;
-  RAM[0x8d] = tmp % 10;
+  Do_RenderDigit(0x45, 0xe7, tmp % 10);
   tmp /= 10;
-  RAM[0x8c] = tmp % 10;
-  tmp /= 10;
-  RAM[0x8b] = tmp;
-  if (tmp) {
-      Do_RenderDigit(0x3b, 0xe7, tmp);
-  }
-  Do_RenderDigit(0x40, 0xe7, RAM[0x8c]);
-  Do_RenderDigit(0x45, 0xe7, RAM[0x8d]);
+  Do_RenderDigit(0x40, 0xe7, tmp % 10);
+  if (tmp > 10)
+    Do_RenderDigit(0x3b, 0xe7, tmp / 10);
 
   Do_RenderSprite(0x4e, 0xe8, 0x2d, 2); /* 0x1d8b */
 
-  Do_RenderDigit(0x66, 0xe7, RAM[0x3A]); /* 0x1d94 */
-  Do_RenderDigit(0x6b, 0xe7, RAM[0x3B]);
-  Do_RenderDigit(0x70, 0xe7, RAM[0x3C]);
+  Do_RenderDigit(0x66, 0xe7, bonus[0]); /* 0x1d94 */
+  Do_RenderDigit(0x6b, 0xe7, bonus[1]);
+  Do_RenderDigit(0x70, 0xe7, bonus[2]);
   Do_RenderDigit(0x75, 0xe7, 0); /* 0x1daf */
   Do_RenderSprite(0x7e, 0xe8, 0x2e, 2); /* 0x1dbe */
 
-  tmp = RAM[0x4d] >> 1;
+  tmp = current_level >> 4;
   if (tmp > 8) tmp = 8;
   tmp ^= 0xff;
   tmp = (tmp + 10) & 0xff;
-  RAM[0x1d] = tmp;
+  timer_ticks[0] = tmp;
   Do_RenderDigit(0x91, 0xe7, tmp); /* 0x1dd5 */
-  RAM[0x1e] = 0;
+  timer_ticks[1] = 0;
   Do_RenderDigit(0x96, 0xe7, 0); /* 0x1de0 */
-  RAM[0x1f] = 0;
+  timer_ticks[2] = 0;
   Do_RenderDigit(0x9b, 0xe7, 0); /* 0x1deb */
 }
 
@@ -200,7 +187,7 @@ static void do_1b38(void)
   do_1cc3();
 
   /* ??? I think X and Y are backwards here :-( */
-  addr = LD2(0x0cc0 + (RAM[0x5c] << 1));
+  addr = LD2(0x0cc0 + ((current_level & 7) << 1));
   RAM[0x51] = addr & 0xff;
   RAM[0x52] = addr >> 8;
   RAM[0x53] = RAM[addr];
@@ -506,7 +493,7 @@ label_1ab5:
   y = RAM[0x28 + x];
   tmp += y;
   if (x == 3)
-    RAM[0x3e]++;
+    extra_life++;
   if (tmp < 0x0a) /* 0x1ac6 */
     goto label_1ad6;
   tmp -= 0x0a;
@@ -788,7 +775,7 @@ label_2160:
       tmp = RAM[0x41];
       if (tmp < 0xdc) /* 0x2177 */
 	goto label_217b;
-      RAM[0x4f]++;
+      is_dead++;
 label_217b:
       do_2324(RAM[0x48]); /* 0x217d */
       RAM[0x40] += RAM[0x46];
@@ -970,7 +957,7 @@ static void do_0c38(void)
   int tmp;
   if (!(RAM[0x46] || RAM[0x47]))
     return;
-  if ((RAM[0x38] & 1) != 0)
+  if ((duck_timer & 1) != 0)
     return;
   tmp = RAM[0x49];
   if (tmp == 0) { /* 0x0c48 */
@@ -1061,30 +1048,35 @@ static void do_1aa4(void)
   RAM[0x66] = (RAM[0x66] << 1) | c2;
 }
 
-static void do_2702(void)
+static void DrawTimer(int n)
 {
-  int tmp;
-  int x;
-  int y;
-  tmp = RAM[0x88];
-  y = tmp;
-  x = (uint8_t)((tmp << 2) + RAM[0x88] + 0x91);
-  tmp = RAM[0x1d + y];
-  y = 0xe7;
-  Do_RenderDigit(x, y, tmp);
+  Do_RenderDigit(0x91 + n * 5, 0xe7, timer_ticks[n]);
 }
 
-static void do_2715(void)
+static void DrawBonus(int n)
 {
-  int tmp;
-  int x;
-  int y;
-  tmp = RAM[0x88];
-  y = tmp;
-  x = (uint8_t)((tmp << 2) + RAM[0x88] + 0x66);
-  tmp = RAM[0x3a + y];
-  y = 0xe7;
-  Do_RenderDigit(x, y, tmp);
+  Do_RenderDigit(0x66 + n * 5, 0xe7, bonus[n]);
+}
+
+static void ReduceBonus(void)
+{
+  int n;
+  int flag;
+
+  n = 2;
+label_26e0:
+  DrawBonus(n);
+  bonus[n]--;
+  flag = ((bonus[n] & 0x80) != 0);
+  if (flag) { /* 0x26e8 */
+      bonus[n] = 9;
+  }
+  DrawBonus(n);
+  n--;
+  if (flag)
+    goto label_26e0;
+  if (bonus[0] + bonus[1] + bonus[2] == 0)
+    start_level++;
 }
 
 /* MoveDucks */
@@ -1097,13 +1089,12 @@ static void do_2407(void)
   int duck_look;
 
   /* Big Duck.  */
-  RAM[0x38]++;
-  tmp = RAM[0x38];
-  if (tmp == 8) {
-      RAM[0x38] = 0;
+  duck_timer++;
+  if (duck_timer == 8) {
+      duck_timer = 0;
       goto label_2420;
   }
-  if (tmp == 4) /* 0x2418 */
+  if (duck_timer == 4) /* 0x2418 */
     goto label_269d;
   goto label_24b5;
 label_2420:
@@ -1325,50 +1316,36 @@ label_269d:
   }
   RAM[0x88] = 2;
 label_26ac:
-  do_2702();
   x = RAM[0x88];
-  RAM[0x1d + x]--;
-  flag = (RAM[0x1d + x] & 0x80) != 0;
+  DrawTimer(x);
+  timer_ticks[x]--;
+  flag = (timer_ticks[x] & 0x80) != 0;
   if (flag) /* 0x26b4 */
-    RAM[0x1d + x] = 9;
-  do_2702();
+    timer_ticks[x] = 9;
+  DrawTimer(x);
   RAM[0x88]--;
   if (flag) /* 0x26c0 */
     goto label_26ac;
-  tmp = (uint8_t)(RAM[0x1d] + RAM[0x1e] + RAM[0x1f]);
+  tmp = (uint8_t)(timer_ticks[0] + timer_ticks[1] + timer_ticks[2]);
   if (tmp == 0) { /* 0x26c9 */
-      RAM[0x4f]++;
+      is_dead++;
       return; /* 0x26cd */
   }
-  tmp = RAM[0x1f];
+  tmp = timer_ticks[2];
   if (tmp != 0 && tmp != 5)
     return; /* 0x26d6 */
-  tmp = RAM[0x3d];
+  tmp = start_level;
   if (tmp != 0) /* 0x26d9 */
     return;
-  RAM[0x88] = 2;
-label_26e0:
-  do_2715();
-  x = RAM[0x88];
-  RAM[0x3a + x]--;
-  flag = ((RAM[0x3a + x] & 0x80) != 0);
-  if (flag) /* 26e8 */
-      RAM[0x3a + x] = 9;
-  do_2715();
-  RAM[0x88]--;
-  if (flag) /* 0x26f4 */
-    goto label_26e0;
-  tmp = (uint8_t)(RAM[0x3a] + RAM[0x3b] + RAM[0x3c]);
-  if (tmp == 0) /* 0x26fd */
-    RAM[0x3d]++;
+  ReduceBonus();
 }
 
 /* MaybeAddExtraLife */
 static void do_2f49(void)
 {
-  if (RAM[0x3e] == 0)
+  if (extra_life == 0)
     return;
-  RAM[0x3e] = 0;
+  extra_life = 0;
   do_2f5a();
   RAM[0x20 + current_player]++;
 }
@@ -1390,7 +1367,7 @@ label_2730:
   tmp = (uint8_t)((RAM[0x0405 + x] - 1) - RAM[0x41] + 0xe);
   if (tmp >= 0x1d) /* 0x274c */
     goto label_2750;
-  RAM[0x4f]++;
+  is_dead++;
 label_2750:
   x++;
   if (x < num_ducks)
@@ -1405,29 +1382,7 @@ label_2758:
   tmp = (uint8_t)(big_duck_y - 5 - RAM[0x41] + 0x0e);
   if (tmp >= 0x1d) /* 0x2777 */
     return;
-  RAM[0x4f]++;
-}
-
-/* TimerTickDown */
-static void do_26dc(void)
-{
-  int x;
-  int flag;
-  RAM[0x88] = 2;
-label_26e0:
-  do_2715();
-  x = RAM[0x88];
-  RAM[0x3a + x]--;
-  flag = ((RAM[0x3a + x] & 0x80) != 0);
-  if (flag) { /* 0x26e8 */
-      RAM[0x3a + x] = 9;
-  }
-  do_2715();
-  RAM[0x88]--;
-  if (flag)
-    goto label_26e0;
-  if (RAM[0x3a] + RAM[0x3b] + RAM[0x3c] == 0)
-    RAM[0x3d]++;
+  is_dead++;
 }
 
 /* ResetLevel? */
@@ -1441,7 +1396,7 @@ static void do_2e6b(void)
   for (i = 0; i < 8; i++) /* 0x2e7f */
     RAM[0x28 + i] = RAM[0x0500 + x + i];
   for (i = 0; i < 4; i++) /* 0x2e8f */
-    RAM[0x3a + i] = RAM[0x0508 + x + i];
+    bonus[i] = RAM[0x0508 + x + i];
 }
 
 static void do_2dfe(void)
@@ -1476,7 +1431,7 @@ static void do_2e2d(void)
       RAM[0x28 + y] = RAM[0x0500 + o + y];
   }
   for (y = 0; y < 4; y++) {
-      RAM[0x3a + y] = RAM[0x0508 + o + y];
+      bonus[y] = RAM[0x0508 + o + y];
   }
   RAM[0x3f] = (player * 0x22) + 0xd;
 }
@@ -1490,7 +1445,7 @@ static void do_2f7c(int addr)
 static int do_29f0(void)
 {
   int tmp;
-  if (RAM[0x4f] != 0)
+  if (is_dead != 0)
     goto label_2a39;
   if (RAM[0x41] < 0x11)
     goto label_2a39;
@@ -1502,18 +1457,18 @@ static int do_29f0(void)
   return 0x29d8;
 label_2a05:
   /* Level complete */
-  if (RAM[0x3d] != 0)
+  if (start_level != 0)
     goto label_2a2b;
 label_2a09:
   do_1ab5(6, 1);
-  do_26dc();
+  ReduceBonus();
   do_2f49();
   tmp = RAM[0x3c];
   if (tmp == 0 || tmp == 5) { /* 0x2a1c */
       /* BEEP(?) */
   }
   /* 0x2a27 */
-  if (RAM[0x3d] == 0)
+  if (start_level == 0)
     goto label_2a09;
 label_2a2b:
   /* Advance to next level */
@@ -1533,14 +1488,14 @@ label_2a39:
   /* "Game Over" */
   /* 0x2a64 */
   /* Highscores.  */
-  if (--RAM[0x5f] == 0)
+  if (--active_players == 0)
     goto label_2a87;
 label_2a70:
   /* Select next player. */
   tmp = current_player;
   do {
       tmp = (tmp + 1) & 3;
-  } while (tmp >= RAM[0x5e] || RAM[0x20 + tmp] == 0);
+  } while (tmp >= num_players || RAM[0x20 + tmp] == 0);
   current_player = tmp;
   do_2e2d(); /* 0x2a81 */
   return 0x29b4;
@@ -1556,7 +1511,7 @@ label_29ae:
 void start_game()
 {
   int i, j;
-  RAM[0x5e] = RAM[0x5f] = NUM_PLAYERS;
+  num_players = active_players = NUM_PLAYERS;
   /* Lives */
   RAM[0x20] = RAM[0x21] = RAM[0x22] = RAM[0x23] = 5;
   /* Level */
@@ -1579,14 +1534,12 @@ static void SetupLevel(void)
   int arg;
 
   arg = current_level;
-  RAM[0x5c] = arg & 7;
-  RAM[0x4d] = arg >> 3;
   have_big_duck = (arg > 7);
-  RAM[0x38] = 0;
-  RAM[0x36] = 0;
+  duck_timer = 0;
+  current_duck = 0;
   duck_speed = (arg < 32) ? 8 : 5;
-  RAM[0x3e] = 0;
-  RAM[0x4f] = 0;
+  extra_life = 0;
+  is_dead = 0;
   bonus_hold = 0;
   RAM[0x66] = 0x76;
   RAM[0x67] = 0x76;

@@ -35,6 +35,7 @@ uint8_t bonus[3];
 uint8_t timer_ticks[3];
 uint8_t lives[4];
 uint8_t level[4];
+uint8_t levelmap[0x200];
 
 #include "ram.c"
 #define LD2(addr) (RAM[addr] | (RAM[(addr) + 1] << 8))
@@ -154,14 +155,6 @@ static void do_1cc3(void)
   Do_RenderDigit(0x9b, 0xe7, 0); /* 0x1deb */
 }
 
-/* WriteScreen? */
-static void do_23e0(int x, int y, int a)
-{
-  int offset;
-  offset = x + y * 20;
-  RAM[0x0600 + offset] = a;
-}
-
 /* 0x23c8 */
 /* Duck code generates out of bounds reads.  */
 static int Do_ReadMap(uint8_t x, uint8_t y)
@@ -169,7 +162,7 @@ static int Do_ReadMap(uint8_t x, uint8_t y)
   if (y >= 0x19 || x >= 0x14) {
       return 0;
   }
-  return RAM[0x0600 + x + y * 20];
+  return levelmap[x + y * 20];
 }
 
 /* 0x23e0 and 0x1a0c */
@@ -177,7 +170,7 @@ static void Do_InitTile(int x, int y, int sprite, int n, int color)
 {
     int offset;
     offset = y * 20 + x;
-    RAM[0x0600 + offset] = n;
+    levelmap[offset] = n;
     Do_RenderSprite(x << 3, (y << 3) | 7, sprite, color);
 }
 
@@ -205,7 +198,7 @@ static void do_1b38(void)
   offset = 5;
   /* 0x1b64 */
   for (i = 0; i < 0x200; i++)
-    RAM[0x0600 + i] = 0;
+    levelmap[i] = 0;
 
   /* 0x1b70 */
   RAM[0x8a] = RAM[0x53];
@@ -231,7 +224,7 @@ label_1bb0:
   i = RAM[addr + offset++] - y;
 
 label_1bc6:
-  tmp = RAM[0x0600 + x + y * 20];
+  tmp = levelmap[x + y * 20];
   if (tmp) { /* 0x1bcd */
     Do_RenderSprite(x << 3, (y << 3) | 7, tmp, 3);
   }

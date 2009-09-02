@@ -334,10 +334,10 @@ static void StartLevel(void)
   big_duck_dx = big_duck_dy = 0;
   big_duck_sprite = 0;
   DrawBigDuck();
-  if (RAM[0x4D] == 1) { /* 0x2edf */
+  if ((current_level >> 3) == 1) { /* 0x2edf */
       num_ducks = 0;
   }
-  if (RAM[0x4D] == 3) { /* 0x2ee7 */
+  if (current_level >= 24) { /* 0x2ee7 */
       num_ducks = 5;
   }
   i = -1;

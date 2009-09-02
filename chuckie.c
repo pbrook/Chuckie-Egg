@@ -10,8 +10,6 @@
 #include "ram.c"
 #define LD2(addr) (RAM[addr] | (RAM[(addr) + 1] << 8))
 
-uint8_t Accumulator, XReg, YReg;
-
 SDL_Surface *sdlscreen;
 
 void die(const char *msg, ...)
@@ -62,12 +60,11 @@ static void Do_RenderSprite(int x, int y, int sprite, int color)
     }
 }
 
-/* DrawLives? */
-static void do_1def(void)
+static void DrawLives(int player)
 {
   int tmp;
-  RAM[0x8b] = 0x22 * XReg + 0x1b;
-  RAM[0x8d] = (RAM[0x88] << 6) + 2;
+  RAM[0x8b] = 0x22 * player + 0x1b;
+  RAM[0x8d] = (player << 6) + 2;
   RAM[0x8c] = RAM[0x8b] + 1;
   RAM[0x8e] = 6;
 label_1e16:
@@ -77,7 +74,7 @@ label_1e16:
   RAM[0x8e]--;
   if (RAM[0x8e] != 0) /* 0x1e2d */
     goto label_1e16;
-  tmp = RAM[RAM[0x88] + 0x20];
+  tmp = RAM[player + 0x20];
   if (tmp == 0)
   if (tmp == 0)  /* 0x1e37 */
     goto label_1e62;
@@ -112,14 +109,9 @@ static void do_1cc3(void)
   Do_RenderSprite(0, 0xf8, 0x29, 2); /* 0x1cd3 */
   tmp = G_Player * 0x22 + 0x1b;
   Do_RenderSprite(tmp, 0xf8, 0x2a, 2); /* 0x1cee */
-  XReg = 0;
-  RAM[0x88] = 0;
-label_1cf5:
-  do_1def(); /* 0x1c5f */
-  XReg = RAM[0x88] + 1;
-  RAM[0x88] = XReg;
-  if (XReg < RAM[0x5e]) /* 0x1cfe */
-    goto label_1cf5;
+  for (tmp = 0; tmp < RAM[0x5e]; tmp++) {
+      DrawLives(tmp);
+  }
   Do_RenderSprite(0, 0xe8, 0x2b, 2); /* 0x1d10 */
   Do_RenderSprite(0x1b, 0xe7, G_Player + 0x20, 2); /* 0x1d22 */
   Do_RenderSprite(0x24, 0xe8, 0x2c, 2); /* 0x1d31 */

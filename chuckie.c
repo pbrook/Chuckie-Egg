@@ -187,96 +187,92 @@ static void Do_InitTile(int x, int y, int sprite, int n, int color)
 
 static void LoadLevel(void)
 {
-  int addr;
-  int i;
-  int offset;
-  int tmp;
-  int x;
-  int y;
+    int addr;
+    int i;
+    int offset;
+    int tmp;
+    int x;
+    int y;
+    int num_walls;
+    int num_ladders;
+    int num_grain;
 
-  do_1cc3();
+    do_1cc3();
 
-  /* ??? I think X and Y are backwards here :-( */
-  addr = LD2(0x0cc0 + ((current_level & 7) << 1));
-  RAM[0x51] = addr & 0xff;
-  RAM[0x52] = addr >> 8;
-  RAM[0x53] = RAM[addr];
-  RAM[0x54] = RAM[addr + 1];
-  have_lift = RAM[addr + 2];
-  RAM[0x56] = RAM[addr + 3];
-  num_ducks = RAM[addr + 4];
-  offset = 5;
-  /* 0x1b64 */
-  for (i = 0; i < 0x200; i++)
-    levelmap[i] = 0;
+    addr = LD2(0x0cc0 + ((current_level & 7) << 1));
+    RAM[0x51] = addr & 0xff;
+    RAM[0x52] = addr >> 8;
+    num_walls = RAM[addr];
+    num_ladders = RAM[addr + 1];
+    have_lift = RAM[addr + 2];
+    num_grain = RAM[addr + 3];
+    num_ducks = RAM[addr + 4];
+    offset = 5;
+    /* 0x1b64 */
+    for (i = 0; i < 0x200; i++)
+      levelmap[i] = 0;
 
-  /* 0x1b70 */
-  RAM[0x8a] = RAM[0x53];
-label_1b7a:
-  y = RAM[addr + offset++];
-  x = RAM[addr + offset++];
-  i = RAM[addr + offset++] - x;
+    /* 0x1b70 */
+    while (num_walls--) {
+	y = RAM[addr + offset++];
+	x = RAM[addr + offset++];
+	i = RAM[addr + offset++] - x;
 
 label_1b90:
-  Do_InitTile(x, y, 1, 1, 3); /* 0x1b96 */
-  x++;
-  i--;
-  if (i >= 0) /* 0x1ba4 */
-    goto label_1b90;
-  RAM[0x8a]--;
-  if (RAM[0x8a] != 0) /* 0x1ba6 */
-    goto label_1b7a;
+	Do_InitTile(x, y, 1, 1, 3); /* 0x1b96 */
+	x++;
+	i--;
+	if (i >= 0) /* 0x1ba4 */
+	  goto label_1b90;
+    }
 
-  RAM[0x8a] = RAM[0x54];
-label_1bb0:
-  x = RAM[addr + offset++];
-  y = RAM[addr + offset++];
-  i = RAM[addr + offset++] - y;
+    while (num_ladders--) {
+	x = RAM[addr + offset++];
+	y = RAM[addr + offset++];
+	i = RAM[addr + offset++] - y;
 
 label_1bc6:
-  tmp = levelmap[x + y * 20];
-  if (tmp) { /* 0x1bcd */
-    Do_RenderSprite(x << 3, (y << 3) | 7, tmp, 3);
-  }
-  Do_InitTile(x, y, 2, tmp | 2, 2); /* 0x1be4 */
-  y++;
-  i--;
-  if (i >= 0) /* 0x1bf4 */
-    goto label_1bc6;
-  RAM[0x8a]--;
-  if (RAM[0x8a] != 0) /* 0x1bf8 */
-    goto label_1bb0;
+	tmp = levelmap[x + y * 20];
+	if (tmp) { /* 0x1bcd */
+	  Do_RenderSprite(x << 3, (y << 3) | 7, tmp, 3);
+	}
+	Do_InitTile(x, y, 2, tmp | 2, 2); /* 0x1be4 */
+	y++;
+	i--;
+	if (i >= 0) /* 0x1bf4 */
+	  goto label_1bc6;
+    }
 
-  if (have_lift) { /* 0x1bfc */
-      int tmp;
-      tmp = RAM[addr + offset++];
-      tmp <<= 3;
-      lift_x = tmp;
-  }
+    if (have_lift) { /* 0x1bfc */
+	int tmp;
+	tmp = RAM[addr + offset++];
+	tmp <<= 3;
+	lift_x = tmp;
+    }
 
-  /* 0c1ca0 */
-  eggs_left = 0;
-  for (i = 0; i < 0xc; i++) {
-      x = RAM[addr + offset++];
-      y = RAM[addr + offset++];
-      Do_InitTile(x, y, 3, (i << 4) | 4, 1);
-      eggs_left++;
-  }
+    /* 0c1ca0 */
+    eggs_left = 0;
+    for (i = 0; i < 0xc; i++) {
+	x = RAM[addr + offset++];
+	y = RAM[addr + offset++];
+	Do_InitTile(x, y, 3, (i << 4) | 4, 1);
+	eggs_left++;
+    }
 
-  for (i = 0; i < RAM[0x56]; i++) {
-      x = RAM[addr + offset++];
-      y = RAM[addr + offset++];
-      Do_InitTile(x, y, 4, (i << 4) | 8, 2);
-  }
+    for (i = 0; i < num_grain; i++) {
+	x = RAM[addr + offset++];
+	y = RAM[addr + offset++];
+	Do_InitTile(x, y, 4, (i << 4) | 8, 2);
+    }
 
-  /* 0x1c94 */
-  Do_RenderSprite(0, 0xdc, have_big_duck ? 0x14 : 0x13, 4); /* 0x1caa */
+    /* 0x1c94 */
+    Do_RenderSprite(0, 0xdc, have_big_duck ? 0x14 : 0x13, 4); /* 0x1caa */
 
-  /* 0x1cad */
-  for (i = 0; i < 5 ; i++) { /* 0x1cc0 */
-      RAM[0x040a + i] = RAM[addr + offset++];
-      RAM[0x040f + i] = RAM[addr + offset++];
-  }
+    /* 0x1cad */
+    for (i = 0; i < 5 ; i++) { /* 0x1cc0 */
+	RAM[0x040a + i] = RAM[addr + offset++];
+	RAM[0x040f + i] = RAM[addr + offset++];
+    }
 }
 
 /* DrawBigDuck */

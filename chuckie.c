@@ -37,6 +37,10 @@ uint8_t lives[4];
 uint8_t level[4];
 uint8_t levelmap[0x200];
 uint8_t player_sprite;
+uint8_t player_mode; /*0 = Walking, 1 = Climbing, 2 = Jumping, 3 = Falling */
+uint8_t player_fall;
+uint8_t player_slide;
+uint8_t player_face;
 uint8_t player_x;
 uint8_t player_y;
 uint8_t player_tilex;
@@ -370,8 +374,8 @@ label_2eed:
   player_tiley = 2;
   player_partial_x = 7;
   player_partial_y = 0;
-  RAM[0x49] = 0;
-  RAM[0x4c] = 1;
+  player_mode = 0;
+  player_face = 1;
   DrawLastLife(); /* 0x2f45 */
 }
 
@@ -463,25 +467,14 @@ static void do_2311(int x, int y)
   Do_InitTile(x, y, 4, 0, 2);
 }
 
-/* AddScore2 */
-static int do_1ad8(int x, int y, int tmp)
+static void DrawScoreChange(int n, int oldval, int newval)
 {
-  if (x < 2) /* 0x1ada */
-    return x;
-  RAM[0x8c] = tmp;
-  RAM[0x8d] = x;
-  RAM[0x8e] = y;
-  tmp = (current_player * 0x22) + 0xd;
-label_1ae6:
-  tmp += 5;
-  x--;
-  if ((x & 0x80) == 0) /* 0x1ae9 */
-    goto label_1ae6;
-  RAM[0x8b] = tmp;
-  x = tmp;
-  Do_RenderDigit(x, 0xf7, RAM[0x8e]); /* 0x1af2 */
-  Do_RenderDigit(x, 0xf7, RAM[0x8c]); /* 0x1afb */
-  return x;
+    int x;
+    if (n < 2) /* 0x1ada */
+	return;
+    x = (current_player * 0x22) + 0x12 + n * 5;;
+    Do_RenderDigit(x, 0xf7, oldval); /* 0x1af2 */
+    Do_RenderDigit(x, 0xf7, newval); /* 0x1afb */
 }
 
 /* AddScore */
@@ -491,28 +484,29 @@ static void do_1ab5(int x, int a)
   int y;
   tmp = a;
 label_1ab5:
-  y = RAM[0x28 + x];
+  y = player_data->score[x];
   tmp += y;
   if (x == 3)
     extra_life++;
   if (tmp < 0x0a) /* 0x1ac6 */
     goto label_1ad6;
   tmp -= 0x0a;
-  RAM[0x28 + x] = tmp;
-  do_1ad8(x, y, tmp); /* 0x1acd */
+  player_data->score[x] = tmp;
+  DrawScoreChange(x, y, tmp); /* 0x1acd */
   tmp = 1;
   x--;
   if ((x & 0x80) == 0) /* 0x1ad3 */
     goto label_1ab5;
   return;
 label_1ad6:
-  RAM[0x28 + x] = tmp;
-  do_1ad8(x, y, tmp);
+  player_data->score[x] = tmp;
+  DrawScoreChange(x, y, tmp);
 }
 
 static void MovePlayer(void)
 {
   int x, y, tmp;
+  int tmp2;
 
   move_x = 0;
   move_y = 0;
@@ -530,32 +524,32 @@ static void MovePlayer(void)
   }
   move_y <<= 1;
   /* 0x1e81 */
-  tmp = RAM[0x49];
+  tmp = player_mode;
   if (tmp == 2) {
       /* Jump */
       /* 0x1f81 */
 label_1f81:
-      move_x = RAM[0x4b];
-      RAM[0x89] = move_y;
-      tmp = RAM[0x4a] >> 2;
+      move_x = player_slide;
+      tmp2 = move_y;
+      tmp = player_fall >> 2;
       if (tmp >= 6) /* 0x1f8f */
 	tmp = 6;
       tmp ^= 0xff;
       tmp += 3;
       move_y = tmp;
-      RAM[0x4a]++;
+      player_fall++;
       if (player_y == 0xdc) { /* 0x1fa0 */
 	  move_y = 0xff;
-	  RAM[0x4a] = 0x0c;
+	  player_fall = 0x0c;
 	  goto label_2062;
       }
       /* 0x1fad */
       tmp = (int8_t)(player_partial_x + move_x);
       if (tmp != 3) /* 0x1fb4 */
 	  goto label_2016;
-      if (RAM[0x89] == 0) /* 0x1fb8 */
+      if (tmp2 == 0) /* 0x1fb8 */
 	goto label_2016;
-      if ((RAM[0x89] & 0x80) != 0) /* 0x1fba */
+      if ((tmp2 & 0x80) != 0) /* 0x1fba */
 	goto label_1fed;
       /* 0x1fbc */
       x = player_tilex;
@@ -569,7 +563,7 @@ label_1f81:
       if ((tmp & 2) == 0) /* 0x1fd7 */
 	goto label_2016;
 label_1fdb:
-      RAM[0x49] = 1;
+      player_mode = 1;
       tmp = player_partial_y + move_y;
       if (tmp & 1) /* 0x1fe6 */
 	  move_y++;
@@ -585,7 +579,7 @@ label_1fed:
       tmp = Do_ReadMap(x, y); /* 0x1ffd */
       if ((tmp & 2) == 0) /* 0x2002 */
 	goto label_2016;
-      RAM[0x49] = 1;
+      player_mode = 1;
       tmp = player_partial_y + move_y;
       if (tmp & 1) /* 0x1fe6 */
 	  move_y--;
@@ -603,7 +597,7 @@ label_2016:
 	  tmp = Do_ReadMap(x, y); /* 0x2054 */
 	  if ((tmp & 1) == 0) /* 0x2059 */
 	    goto label_2062;
-	  RAM[0x49] = 0;
+	  player_mode = 0;
 	  goto label_2062;
       }
       /* 0x201f */
@@ -612,7 +606,7 @@ label_2016:
       tmp = Do_ReadMap(x, y); /* 0x2024 */
       if ((tmp & 1) == 0) /* 0x2029 */
 	goto label_2062;
-      RAM[0x49] = 0;
+      player_mode = 0;
       move_y = -player_partial_y;
       goto label_2062; /* 0x2036 */
 label_2039:
@@ -621,7 +615,7 @@ label_2039:
       tmp = Do_ReadMap(x, y); /* 0x203e */
       if ((tmp & 1) == 0) /* 0x2041 */
 	goto label_2062;
-      RAM[0x49] = 0;
+      player_mode = 0;
       goto label_2062;
 label_2062:
       if (!have_lift)
@@ -660,29 +654,29 @@ label_20a5:
 label_20ac:
       tmp -= RAM[0x8b];
       move_y = tmp + 1;
-      RAM[0x4a] = 0;
-      RAM[0x49] = 4;
+      player_fall = 0;
+      player_mode = 4;
       goto label_20cd; /* 0x20bc */
 label_20bf:
       if (do_2276()) {
 	  move_x = -move_x;
-	  RAM[0x4b] = move_x;
+	  player_slide = move_x;
       }
 label_20cd:
       goto label_217b; /* 0x20cd */
   } else if (tmp == 3) {
       /* Fall */
       /* 0x20e3 */
-      RAM[0x4a]++;
-      tmp = RAM[0x4a];
+      player_fall++;
+      tmp = player_fall;
       if (tmp < 4) { /* 0x20e9 */
-	  move_x = RAM[0x4b];
+	  move_x = player_slide;
 	  move_y = 0xff;
 	  goto label_2108; /* 0x20f3 */
       }
       /* 0x20f6 */
       move_x = 0;
-      tmp = RAM[0x4a] >> 2;
+      tmp = player_fall >> 2;
       if (tmp >= 4) /* 0x2100 */
 	tmp = 3;
       move_y = ~tmp;
@@ -697,7 +691,7 @@ label_2108:
       tmp = Do_ReadMap(x, y); /* 0x2116 */
       if ((tmp & 1) == 0) /* 0x211b */
 	goto label_213b;
-      RAM[0x49] = 0;
+      player_mode = 0;
       move_y = -player_partial_y;
       goto label_213b; /* 0x2128 */
 label_212b:
@@ -705,7 +699,7 @@ label_212b:
       y = player_tiley - 1;
       tmp = Do_ReadMap(x, y); /* 0x2130 */
       if ((tmp & 1) != 0) /* 0x2135 */
-	RAM[0x49] = 0;
+	player_mode = 0;
 label_213b:
       goto label_217b;
   } else if (tmp == 1) {
@@ -725,7 +719,7 @@ label_213b:
       if ((tmp & 1) == 0) /* 0x1f3d */
 	goto label_1f4a;
       move_y = 0;
-      RAM[0x49] = 0;
+      player_mode = 0;
       goto label_1f7a; /* 0x1f47 */
 label_1f4a:
       move_x = 0;
@@ -748,7 +742,7 @@ label_1f6c:
       if ((tmp & 2) == 0) /* 0x1f76 */
 	move_y = 0;
 label_1f7a:
-      RAM[0x4c] = 0;
+      player_face = 0;
       goto label_217b;
   } else if (tmp != 0) {
       /* 0x213e */
@@ -761,14 +755,14 @@ label_1f7a:
       if (tmp >= player_x) /* 0x2154 */
 	goto label_2160;
 label_2156:
-      RAM[0x4a] = 0;
-      RAM[0x4b] = 0;
-      RAM[0x49] = 3;
+      player_fall = 0;
+      player_slide = 0;
+      player_mode = 3;
 label_2160:
       move_y = 1;
       tmp= move_x;
       if (tmp != 0) /* 0x2166 */
-	RAM[0x4c] = tmp;
+	player_face = tmp;
       if (do_2276()) { /* 0x216a */
 	  move_x = 0;
       }
@@ -794,7 +788,7 @@ label_217b:
       player_partial_y = tmp & 7;
       x = 6;
       /* 0x21b6 */
-      tmp = RAM[0x4c];
+      tmp = player_face;
       if (tmp == 0) /* 0x21b8 */
 	goto label_21c6;
       if ((tmp & 0x80) == 0) /* 0x21ba */
@@ -809,11 +803,11 @@ label_21c6:
       tmp = player_partial_y >> 1;
 label_21cd:
       x = 2;
-      RAM[0x89] = x;
-      if (RAM[0x89] != 0) { /* 0x21d3 */
+      tmp2 = x;
+      if (tmp2 != 0) { /* 0x21d3 */
 	  tmp = (tmp & 1) << 1;
       }
-      x = RAM[0x49];
+      x = player_mode;
       if (x != 1) /* 0x21dc */
 	goto label_21e7;
       x = move_y;
@@ -835,7 +829,7 @@ label_21ed:
       tmp = player_partial_y;
       if (tmp >= 4) /* 0x21fd */
 	y++;
-      RAM[0x89] = y;
+      tmp2 = y;
       tmp = Do_ReadMap(x, y); /* 0x2202 */
       RAM[0x88] = tmp;
       tmp &= 0x0c;
@@ -852,7 +846,7 @@ label_21ed:
       tmp = (RAM[0x88] >> 4);
       player_data->egg[tmp]--;
       x = player_tilex;
-      y = RAM[0x89];
+      y = tmp2;
       do_22fe(x, y); /* 0x2230 */
       tmp = (current_level >> 2) + 1;
       if (tmp >= 0x0a) /* 0x223c */
@@ -867,7 +861,7 @@ label_2248:
       tmp = (RAM[0x88] >> 4);
       player_data->grain[tmp]--;
       x = player_tilex;
-      y = RAM[0x89];
+      y = tmp2;
       do_2311(x, y); /* 0x2267 */
       tmp = 5;
       x = 6;
@@ -881,12 +875,12 @@ label_2275:
       if (buttons & 0x10) { /* 0x1e9f */
 	  /* 0x20d0 */
 label_20d0:
-	  RAM[0x4a] = 0;
-	  RAM[0x49] = 2;
+	  player_fall = 0;
+	  player_mode = 2;
 	  tmp = move_x;
-	  RAM[0x4b] = tmp;
+	  player_slide = tmp;
 	  if (tmp != 0) /* 0x20dc */
-	    RAM[0x4c] = tmp;
+	    player_face = tmp;
 	  goto label_1f81; /* 0x20e0 */
       } else if (move_y) { /* 0x1ea6 */
 	  /* 0x1ea8 */
@@ -908,7 +902,7 @@ label_20d0:
 		goto label_1ed8;
 label_1ecd:
 	      move_x = 0;
-	      RAM[0x49] = 1;
+	      player_mode = 1;
 	      goto label_1f19; /* 0x1ed5 */
 	  }
 	  goto label_1ed8;
@@ -934,9 +928,9 @@ label_1ed8:
 		  x = 1;
 		  y++;
 	      }
-	      RAM[0x4b] = x;
-	      RAM[0x4a] = y;
-	      RAM[0x49] = 3;
+	      player_slide = x;
+	      player_fall = y;
+	      player_mode = 3;
 	  }
 	  /* 0x1f10 */
 	  if (do_2276()) { /* 0x1f13 */
@@ -944,7 +938,7 @@ label_1ed8:
 	  }
 label_1f19:
 	  if (move_x) { /* 0x1f1b */
-	      RAM[0x4c] = move_x;
+	      player_face = move_x;
 	  }
 	  goto label_217b;
       }
@@ -958,7 +952,7 @@ static void MakeSound(void)
     return;
   if ((duck_timer & 1) != 0)
     return;
-  tmp = RAM[0x49];
+  tmp = player_mode;
   if (tmp == 0) { /* 0x0c48 */
       tmp = 64;
       goto label_0c8b;
@@ -969,16 +963,16 @@ static void MakeSound(void)
   }
   if (tmp != 2) /*0x0c5a */
     goto label_0c76;
-  tmp = RAM[0x4a];
+  tmp = player_fall;
   if (tmp >= 0x0b) { /* 0x0c60 */
-      tmp = (uint8_t)(0xbe - (RAM[0x4a] * 2));
+      tmp = (uint8_t)(0xbe - (player_fall * 2));
       goto label_0c8b;
   }
-  tmp = (uint8_t)(0x96 - (RAM[0x4a] * 2));
+  tmp = (uint8_t)(0x96 - (player_fall * 2));
   goto label_0c8b;
 label_0c76:
   if (tmp == 3) { /* 0x0c78 */
-    tmp = (uint8_t)(0x6e - (RAM[0x4a] * 2));
+    tmp = (uint8_t)(0x6e - (player_fall * 2));
     goto label_0c8b;
   }
   if (move_x == 0) /* 0x0c86 */
@@ -1085,6 +1079,7 @@ static void MoveDucks(void)
   int x;
   int flag;
   int duck_look;
+  int tmp2;
 
   /* Big Duck.  */
   duck_timer++;
@@ -1234,11 +1229,11 @@ label_25b6:
     x += 2;
   RAM[0x8d] = x;
   tmp = Do_ReadMap(x, y); /* 0x25d2 */
-  RAM[0x89] = tmp;
+  tmp2 = tmp;
   tmp &= 8;
   if ((tmp & 8) == 0) /* 0x25d9 */
     goto label_25ef;
-  tmp = RAM[0x89];
+  tmp = tmp2;
   tmp = (tmp >> 4);
   x = tmp;
   player_data->grain[x]--;
@@ -1382,8 +1377,6 @@ static void SavePlayerState(void)
 {
   int i;
   level[current_player] = current_level;
-  for (i = 0; i < 8; i++) /* 0x2e7f */
-    player_data->score[i] = RAM[0x28 + i];
   for (i = 0; i < 4; i++) /* 0x2e8f */
     player_data->bonus[i] = bonus[i];
 }
@@ -1410,9 +1403,6 @@ static void RestorePlayerState(void)
 {
     int y;
     current_level = level[current_player];
-    for (y = 0; y < 8; y++) {
-	RAM[0x28 + y] = player_data->score[y];
-    }
     for (y = 0; y < 4; y++) {
 	bonus[y] = player_data->bonus[y];
     }
@@ -1445,7 +1435,7 @@ label_2a09:
   do_1ab5(6, 1);
   ReduceBonus();
   MaybeAddExtraLife();
-  tmp = RAM[0x3c];
+  tmp = timer_ticks[3];
   if (tmp == 0 || tmp == 5) { /* 0x2a1c */
       /* BEEP(?) */
   }

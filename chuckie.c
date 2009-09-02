@@ -188,9 +188,7 @@ static int Do_ReadMap(uint8_t x, uint8_t y)
 /* 0x23e0 and 0x1a0c */
 static void Do_InitTile(int x, int y, int sprite, int n, int color)
 {
-    int offset;
-    offset = y * 20 + x;
-    levelmap[offset] = n;
+    levelmap[y * 20 + x] = n;
     Do_RenderSprite(x << 3, (y << 3) | 7, sprite, color);
 }
 
@@ -198,7 +196,6 @@ static void LoadLevel(void)
 {
     int addr;
     int i;
-    int offset;
     int tmp;
     int x;
     int y;
@@ -209,23 +206,20 @@ static void LoadLevel(void)
     do_1cc3();
 
     addr = LD2(0x0cc0 + ((current_level & 7) << 1));
-    RAM[0x51] = addr & 0xff;
-    RAM[0x52] = addr >> 8;
-    num_walls = RAM[addr];
-    num_ladders = RAM[addr + 1];
-    have_lift = RAM[addr + 2];
-    num_grain = RAM[addr + 3];
-    num_ducks = RAM[addr + 4];
-    offset = 5;
+    num_walls = RAM[addr++];
+    num_ladders = RAM[addr++];
+    have_lift = RAM[addr++];
+    num_grain = RAM[addr++];
+    num_ducks = RAM[addr++];
     /* 0x1b64 */
     for (i = 0; i < 0x200; i++)
       levelmap[i] = 0;
 
     /* 0x1b70 */
     while (num_walls--) {
-	y = RAM[addr + offset++];
-	x = RAM[addr + offset++];
-	i = RAM[addr + offset++] - x;
+	y = RAM[addr++];
+	x = RAM[addr++];
+	i = RAM[addr++] - x;
 
 label_1b90:
 	Do_InitTile(x, y, 1, 1, 3); /* 0x1b96 */
@@ -236,9 +230,9 @@ label_1b90:
     }
 
     while (num_ladders--) {
-	x = RAM[addr + offset++];
-	y = RAM[addr + offset++];
-	i = RAM[addr + offset++] - y;
+	x = RAM[addr++];
+	y = RAM[addr++];
+	i = RAM[addr++] - y;
 
 label_1bc6:
 	tmp = levelmap[x + y * 20];
@@ -254,7 +248,7 @@ label_1bc6:
 
     if (have_lift) { /* 0x1bfc */
 	int tmp;
-	tmp = RAM[addr + offset++];
+	tmp = RAM[addr++];
 	tmp <<= 3;
 	lift_x = tmp;
     }
@@ -262,8 +256,8 @@ label_1bc6:
     /* 0c1ca0 */
     eggs_left = 0;
     for (i = 0; i < 0xc; i++) {
-	x = RAM[addr + offset++];
-	y = RAM[addr + offset++];
+	x = RAM[addr++];
+	y = RAM[addr++];
 	if (player_data->egg[i] == 0) {
 	    Do_InitTile(x, y, 3, (i << 4) | 4, 1);
 	    eggs_left++;
@@ -271,8 +265,8 @@ label_1bc6:
     }
 
     for (i = 0; i < num_grain; i++) {
-	x = RAM[addr + offset++];
-	y = RAM[addr + offset++];
+	x = RAM[addr++];
+	y = RAM[addr++];
 	if (player_data->grain[i] == 0) {
 	    Do_InitTile(x, y, 4, (i << 4) | 8, 2);
 	}
@@ -283,8 +277,8 @@ label_1bc6:
 
     /* 0x1cad */
     for (i = 0; i < 5 ; i++) { /* 0x1cc0 */
-	RAM[0x040a + i] = RAM[addr + offset++];
-	RAM[0x040f + i] = RAM[addr + offset++];
+	RAM[0x040a + i] = RAM[addr++];
+	RAM[0x040f + i] = RAM[addr++];
     }
 }
 
@@ -1353,7 +1347,6 @@ static void CollisionDetect(void)
   x = 0;
 label_2730:
   tmp = (uint8_t)((RAM[0x0400 + x] - player_x) + 5);
-//printf ("x%d %d\n", x, tmp);
   if (tmp >= 0x0b) /* 0x273d */
     goto label_2750;
   tmp = (uint8_t)((RAM[0x0405 + x] - 1) - player_y + 0xe);

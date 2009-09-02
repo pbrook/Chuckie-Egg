@@ -16,6 +16,11 @@ int current_player;
 int current_level;
 int eggs_left;
 int bonus_hold;
+int have_lift;
+uint8_t lift_x;
+uint8_t lift_y1;
+uint8_t lift_y2;
+uint8_t current_lift;
 int have_big_duck;
 int duck_timer;
 int big_duck_sprite;
@@ -192,7 +197,7 @@ static void do_1b38(void)
   RAM[0x52] = addr >> 8;
   RAM[0x53] = RAM[addr];
   RAM[0x54] = RAM[addr + 1];
-  RAM[0x55] = RAM[addr + 2];
+  have_lift = RAM[addr + 2];
   RAM[0x56] = RAM[addr + 3];
   num_ducks = RAM[addr + 4];
   offset = 5;
@@ -237,11 +242,11 @@ label_1bc6:
   if (RAM[0x8a] != 0) /* 0x1bf8 */
     goto label_1bb0;
 
-  if (RAM[0x55]) { /* 0x1bfc */
+  if (have_lift) { /* 0x1bfc */
       int tmp;
       tmp = RAM[addr + offset++];
       tmp <<= 3;
-      RAM[0x58] = tmp;
+      lift_x = tmp;
   }
 
   /* 0c1ca0 */
@@ -329,12 +334,12 @@ static void do_2f5a(void)
 static void do_2e92(void)
 {
   int i;
-  if (RAM[0x55]) { /* 0x2e94 */
-      RAM[0x59] = 8;
-      RAM[0x5A] = 0x5a;
-      RAM[0x5B] = 0;
-      Do_RenderSprite(RAM[0x58], RAM[0x59], 5, 1); /* 0x2eb2 */
-      Do_RenderSprite(RAM[0x58], RAM[0x5a], 5, 1); /* 0x2ec1 */
+  if (have_lift) { /* 0x2e94 */
+      lift_y1 = 8;
+      lift_y2 = 0x5a;
+      current_lift = 0;
+      Do_RenderSprite(lift_x, lift_y1, 5, 1); /* 0x2eb2 */
+      Do_RenderSprite(lift_x, lift_y2, 5, 1); /* 0x2ec1 */
   }
   big_duck_x = 4;
   big_duck_y = 0xcc;
@@ -624,9 +629,9 @@ label_2039:
       RAM[0x49] = 0;
       goto label_2062;
 label_2062:
-      if (RAM[0x55] == 0) /* 0x2064 */
+      if (!have_lift)
 	goto label_20bf;
-      tmp = (uint8_t)(RAM[0x58] - 1);
+      tmp = (uint8_t)(lift_x - 1);
       if (tmp >= RAM[0x40]) /* 0x206d */
 	goto label_20bf;
       tmp = (uint8_t)(tmp + 0x0a);
@@ -635,7 +640,7 @@ label_2062:
       /* 0x2075 */
       RAM[0x8b] = RAM[0x41] - 0x11;
       RAM[0x8c] = RAM[0x41] - 0x13 + RAM[0x47];
-      tmp = RAM[0x59];
+      tmp = lift_y1;
       if (tmp == RAM[0x8b]) /* 0x2087 */
 	goto label_208f;
       if (tmp >= RAM[0x8b]) /* 0x2089 */
@@ -643,11 +648,11 @@ label_2062:
       if (tmp < RAM[0x8c]) /* 0x208d */
 	goto label_2099;
 label_208f:
-      if (RAM[0x5b] != 0) /* 0x20a7 */
+      if (current_lift != 0) /* 0x20a7 */
 	tmp++;
       goto label_20ac; /* 0x2096 */
 label_2099:
-      tmp = RAM[0x5a];
+      tmp = lift_y2;
       if (tmp == RAM[0x8b]) /* 0x209d */
 	goto label_20a5;
       if (tmp >= RAM[0x8b])
@@ -655,7 +660,7 @@ label_2099:
       if (tmp < RAM[0x8c]) /* 0x20a3 */
 	goto label_20bf;
 label_20a5:
-      if (RAM[0x5b] == 0) /* 0x20a7 */
+      if (current_lift == 0) /* 0x20a7 */
 	tmp++;
 label_20ac:
       tmp -= RAM[0x8b];
@@ -754,7 +759,7 @@ label_1f7a:
       /* 0x213e */
       if ((RAM[0x60] & 0x10) != 0) /* 0x2142 */
 	goto label_20d0;
-      tmp = (uint8_t)(RAM[0x58] - 1);
+      tmp = (uint8_t)(lift_x - 1);
       if (tmp >= RAM[0x40]) /* 0x214e */
 	goto label_2156;
       tmp = (uint8_t)(tmp + 0x0a);
@@ -991,27 +996,27 @@ label_0c8b:
 }
 
 /* MoveLift */
-static void do_2374(void)
+static void MoveLift(void)
 {
   int y;
 
-  if (RAM[0x55] == 0)
+  if (!have_lift)
     return;
-  if (RAM[0x5b] == 0)
-    y = RAM[0x59];
+  if (current_lift == 0)
+    y = lift_y1;
   else
-    y = RAM[0x5a];
-  Do_RenderSprite(RAM[0x58], y, 5, 1); /* 0x2392 */
+    y = lift_y2;
+  Do_RenderSprite(lift_x, y, 5, 1); /* 0x2392 */
   y += 2;
   if (y == 0xe0)
     y = 6;
-  Do_RenderSprite(RAM[0x58], y, 5, 1); /* 0x23af */
-  if (RAM[0x5b] == 0) {
-      RAM[0x59] = y;
+  Do_RenderSprite(lift_x, y, 5, 1); /* 0x23af */
+  if (current_lift == 0) {
+      lift_y1 = y;
   } else {
-      RAM[0x5a] = y;
+      lift_y2 = y;
   }
-  RAM[0x5b] ^= 0xff;
+  current_lift = !current_lift;
 }
 
 /* popcount */
@@ -1631,7 +1636,7 @@ next_frame:
   PollKeys();
   do_1e63();
   do_0c38();
-  do_2374();
+  MoveLift();
   do_2407();
   do_2f49();
   do_2728();

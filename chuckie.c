@@ -42,10 +42,6 @@ static void Do_RenderSprite(int x, int y, int sprite, int color)
     sy = src[1];
     src = &RAM[src[2] + (src[3] << 8)];
     dest = &pixels[x + y * 160];
-    /* 
-    color = ((RAM[0x7f] >> 1) & 1) | ((RAM[0x7f] >> 2) & 2)
-	   | ((RAM[0x7f] >> 3) & 4) | ((RAM[0x7f] >> 4) & 8);
-	   */
 
     bits = 0;
 
@@ -71,7 +67,6 @@ static void do_1def(void)
 {
   int tmp;
   RAM[0x8b] = 0x22 * XReg + 0x1b;
-  RAM[0x7f] = 8;
   RAM[0x8d] = (RAM[0x88] << 6) + 2;
   RAM[0x8c] = RAM[0x8b] + 1;
   RAM[0x8e] = 6;
@@ -82,7 +77,6 @@ label_1e16:
   RAM[0x8e]--;
   if (RAM[0x8e] != 0) /* 0x1e2d */
     goto label_1e16;
-  RAM[0x7f] = 0x20;
   tmp = RAM[RAM[0x88] + 0x20];
   if (tmp == 0)
   if (tmp == 0)  /* 0x1e37 */
@@ -115,7 +109,6 @@ static void do_1cc3(void)
 {
   int tmp;
 
-  RAM[0x7f] = 8;
   Do_RenderSprite(0, 0xf8, 0x29, 2); /* 0x1cd3 */
   tmp = G_Player * 0x22 + 0x1b;
   Do_RenderSprite(tmp, 0xf8, 0x2a, 2); /* 0x1cee */
@@ -127,7 +120,6 @@ label_1cf5:
   RAM[0x88] = XReg;
   if (XReg < RAM[0x5e]) /* 0x1cfe */
     goto label_1cf5;
-  RAM[0x7f] = 8;
   Do_RenderSprite(0, 0xe8, 0x2b, 2); /* 0x1d10 */
   Do_RenderSprite(0x1b, 0xe7, G_Player + 0x20, 2); /* 0x1d22 */
   Do_RenderSprite(0x24, 0xe8, 0x2c, 2); /* 0x1d31 */
@@ -233,7 +225,6 @@ static void do_1b38(void)
     RAM[0x0600 + i] = 0;
 
   /* 0x1b70 */
-  RAM[0x7f] = 0x0a;
   RAM[0x8a] = RAM[0x53];
 label_1b7a:
   y = RAM[addr + offset++];
@@ -250,7 +241,6 @@ label_1b90:
   if (RAM[0x8a] != 0) /* 0x1ba6 */
     goto label_1b7a;
 
-  RAM[0x7f] = 8;
   RAM[0x8a] = RAM[0x54];
 label_1bb0:
   x = RAM[addr + offset++];
@@ -260,9 +250,7 @@ label_1bb0:
 label_1bc6:
   tmp = RAM[0x0600 + x + y * 20];
   if (tmp) { /* 0x1bcd */
-    RAM[0x7f] = 0x0a;
     Do_RenderSprite(x << 3, (y << 3) | 7, tmp, 3);
-    RAM[0x7f] = 8;
   }
   Do_InitTile(x, y, 2, tmp | 2, 2); /* 0x1be4 */
   y++;
@@ -281,7 +269,6 @@ label_1bc6:
   }
 
   /* 0c1ca0 */
-  RAM[0x7f] = 2;
   RAM[0x8a] = 0;
   RAM[0x39] = 0;
   RAM[0x88] = RAM[0x4e];
@@ -299,7 +286,6 @@ label_1c18:
   if (RAM[0x8a] < 0xc) /* 0x1c4f */
     goto label_1c18;
 
-  RAM[0x7f] = 8;
   RAM[0x8a] = 0;
   RAM[0x88] = RAM[0x4e];
 
@@ -317,7 +303,6 @@ label_1c5d:
     goto label_1c5d;
 
   /* 0x1c94 */
-  RAM[0x7f] = 0x20;
   Do_RenderSprite(0, 0xdc, RAM[0x35] ? 0x14 : 0x13, 4); /* 0x1caa */
 
   /* 0x1cad */
@@ -330,7 +315,6 @@ label_1c5d:
 /* DrawPlayer */
 static void do_2336(int n)
 {
-  RAM[0x7f] = 0x20;
   Do_RenderSprite(RAM[0x30], RAM[0x31], n + 0x0f, 4);
 }
 
@@ -353,14 +337,12 @@ static void do_234b(int n)
 /* DrawBigBird? */
 static void do_2324(int sprite)
 {
-  RAM[0x7f] = 0x20;
   Do_RenderSprite(RAM[0x40], RAM[0x41], sprite, 4);
 }
 
 static void do_2f5a(void)
 {
   int tmp;
-  RAM[0x7f] = 0x20;
   tmp = RAM[0x20 + RAM[0x5d]];
   if (tmp >= 9) /* 0x2f64 */
       return;
@@ -375,7 +357,6 @@ static void do_2e92(void)
       RAM[0x59] = 8;
       RAM[0x5A] = 0x5a;
       RAM[0x5B] = 0;
-      RAM[0x7f] = 2;
       Do_RenderSprite(RAM[0x58], RAM[0x59], 5, 1); /* 0x2eb2 */
       Do_RenderSprite(RAM[0x58], RAM[0x5a], 5, 1); /* 0x2ec1 */
   }
@@ -496,13 +477,11 @@ label_22fc:
 
 static void do_22fe(int x, int y)
 {
-  RAM[0x7f] = 2;
   Do_InitTile(x, y, 3, 0, 1);
 }
 
 static void do_2311(int x, int y)
 {
-  RAM[0x7f] = 8;
   Do_InitTile(x, y, 4, 0, 2);
 }
 
@@ -534,7 +513,6 @@ static void do_1ab5(int x, int a)
   int y;
   tmp = a;
 label_1ab5:
-  RAM[0x7f] = 8;
   y = RAM[0x28 + x];
   tmp += y;
   if (x == 3)
@@ -1046,7 +1024,6 @@ static void do_2374(void)
     y = RAM[0x59];
   else
     y = RAM[0x5a];
-  RAM[0x7f] = 2;
   Do_RenderSprite(RAM[0x58], y, 5, 1); /* 0x2392 */
   y += 2;
   if (y == 0xe0)
@@ -1365,7 +1342,6 @@ label_2675:
   return;
 label_269d:
   /* Update bonus/timer.  */
-  RAM[0x7f] = 8;
   tmp = RAM[0x1c];
   if (tmp != 0) { /* 0x26a3 */
       RAM[0x1c]--;

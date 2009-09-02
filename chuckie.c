@@ -36,6 +36,7 @@ uint8_t timer_ticks[3];
 uint8_t lives[4];
 uint8_t level[4];
 uint8_t levelmap[0x200];
+uint8_t player_sprite;
 uint8_t player_x;
 uint8_t player_y;
 uint8_t player_tilex;
@@ -55,6 +56,16 @@ typedef struct {
 
 playerdata_t all_player_data[4];
 #define player_data (&all_player_data[current_player])
+
+struct {
+    uint8_t x;
+    uint8_t y;
+    uint8_t tile_x;
+    uint8_t tile_y;
+    uint8_t mode;
+    uint8_t sprite;
+    uint8_t dir;
+} duck[5];
 
 #include "ram.c"
 #define LD2(addr) (RAM[addr] | (RAM[(addr) + 1] << 8))
@@ -275,10 +286,9 @@ label_1bc6:
     /* 0x1c94 */
     Do_RenderSprite(0, 0xdc, have_big_duck ? 0x14 : 0x13, 4); /* 0x1caa */
 
-    /* 0x1cad */
-    for (i = 0; i < 5 ; i++) { /* 0x1cc0 */
-	RAM[0x040a + i] = RAM[addr++];
-	RAM[0x040f + i] = RAM[addr++];
+    for (i = 0; i < 5 ; i++) {
+	duck[i].tile_x = RAM[addr++];
+	duck[i].tile_y = RAM[addr++];
     }
 }
 
@@ -289,24 +299,22 @@ static void DrawBigDuck(void)
 }
 
 /* DrawDuck */
-static void do_234b(int n)
+static void DrawDuck(int n)
 {
   int sprite;
   int x;
-  int y;
 
-  sprite = RAM[0x0419 + n] + 0x15;
-  x = RAM[0x0400 + n];
-  y = RAM[0x0405 + n];
-  if (sprite >= 0x1d) /* 0x2367 */
+  sprite = duck[n].sprite + 0x15;
+  x = duck[n].x;
+  if (sprite >= 0x1d)
     x -= 8;
-  Do_RenderSprite(x, y, sprite, 8); /* 0x2370 */
+  Do_RenderSprite(x, duck[n].y, sprite, 8);
 }
 
 /* DrawBigBird? */
-static void do_2324(int sprite)
+static void DrawPlayer(void)
 {
-  Do_RenderSprite(player_x, player_y, sprite, 4);
+  Do_RenderSprite(player_x, player_y, player_sprite, 4);
 }
 
 static void DrawLastLife(void)
@@ -344,20 +352,20 @@ static void StartLevel(void)
 label_2eed:
   i++;
   if (i < num_ducks) { /* 0x2ef3 */
-      RAM[0x0400 + i] = RAM[0x040a + i] << 3;
-      RAM[0x0405 + i] = (RAM[0x040f + i] << 3) + 0x14;
-      RAM[0x0414 + i] = 0;
-      RAM[0x0419 + i] = 0;
-      RAM[0x041e + i] = 2;
-      do_234b(i);
+      duck[i].x = duck[i].tile_x << 3;
+      duck[i].y = (duck[i].tile_y << 3) + 0x14;
+      duck[i].mode = 0;
+      duck[i].sprite = 0;
+      duck[i].dir = 2;
+      DrawDuck(i);
       goto label_2eed; /* 0x2f1a */
   }
   /* 0x2f1d */
   /* Delay(3) */
   player_x = 0x3c;
   player_y = 0x20;
-  RAM[0x48] = 6;
-  do_2324(6);
+  player_sprite = 6;
+  DrawPlayer();
   player_tilex = 7;
   player_tiley = 2;
   player_partial_x = 7;
@@ -769,7 +777,7 @@ label_2160:
 	goto label_217b;
       is_dead++;
 label_217b:
-      do_2324(RAM[0x48]); /* 0x217d */
+      DrawPlayer();
       player_x += move_x;
       tmp = (uint8_t)(player_partial_x + move_x);
       if ((tmp & 0x80) != 0) /* 0x218c */
@@ -820,8 +828,8 @@ label_21e7:
       tmp = 0;
 label_21ed:
       tmp += RAM[0x88];
-      RAM[0x48] = tmp;
-      do_2324(tmp); /* 0x21f2 */
+      player_sprite = tmp;
+      DrawPlayer();
       x = player_tilex;
       y = player_tiley;
       tmp = player_partial_y;
@@ -1137,13 +1145,13 @@ label_24b5:
   if (current_duck >= num_ducks) /* 0x24c1 */
     return;
   /* Move little duck.  */
-  tmp = RAM[0x0414 + current_duck];
+  tmp = duck[current_duck].mode;
   if (tmp == 1) /* 0x24cb */
     goto label_25ef;
   if (tmp >= 1) /* 0x24d0 */
     goto label_25b6;
-  RAM[0x8b] = RAM[0x040a + current_duck];
-  RAM[0x8c] = RAM[0x040f + current_duck];
+  RAM[0x8b] = duck[current_duck].tile_x;
+  RAM[0x8c] = duck[current_duck].tile_y;
   RAM[0x8d] = 0;
   x = RAM[0x8b] - 1;
   y = RAM[0x8c] - 1;
@@ -1167,10 +1175,10 @@ label_24b5:
     RAM[0x8d] |= 4;
   x = do_25a9(); /* 0x252a */
   if (x == 1) { /* 0x252f */
-      RAM[0x041e + current_duck] = RAM[0x8d];
+      duck[current_duck].dir = RAM[0x8d];
       goto label_257b; /* 0x2535 */
   }
-  tmp = RAM[0x041e + current_duck];
+  tmp = duck[current_duck].dir;
   if (tmp < 4) { /* 0x2542 */
       tmp ^= 0xfc;
   } else {
@@ -1179,7 +1187,7 @@ label_24b5:
   RAM[0x8d] &= tmp;
   x = do_25a9(); /* 0x254f */
   if (x == 1) { /* 0x2554 */
-      RAM[0x041e + current_duck] = RAM[0x8d];
+      duck[current_duck].dir = RAM[0x8d];
       goto label_257b; /* 0x255d */
   }
   RAM[0x8e] = RAM[0x8d];
@@ -1189,9 +1197,9 @@ label_2564:
   x = do_25a9(); /* 0x256d */
   if (x != 1) /* 0x2572 */
     goto label_2564;
-  RAM[0x041e + current_duck] = RAM[0x8d];
+  duck[current_duck].dir = RAM[0x8d];
 label_257b:
-  tmp = RAM[0x041e + current_duck];
+  tmp = duck[current_duck].dir;
   tmp &= 3;
   if (tmp == 0) /* 0x2582 */
     goto label_25ef;
@@ -1211,14 +1219,14 @@ label_259b:
   if (tmp == 0)
     goto label_25ef;
   tmp = 2;
-  RAM[0x0414 + current_duck] = tmp;
+  duck[current_duck].mode = tmp;
   goto label_25ef; /* 0x25a6 */
 label_25b6:
   if (tmp != 4)
     goto label_25ef;
-  tmp = RAM[0x041e + current_duck];
-  RAM[0x8b] = RAM[0x040a + current_duck];
-  y = RAM[0x040f + current_duck];
+  tmp = duck[current_duck].dir;
+  RAM[0x8b] = duck[current_duck].tile_x;
+  y = duck[current_duck].tile_y;
   RAM[0x8c] = y;
   x = RAM[0x8b] - 1;
   tmp &= 1;
@@ -1238,65 +1246,65 @@ label_25b6:
   y = RAM[0x8c];
   do_2311(x, y); /* 0x25ec */
 label_25ef:
-  do_234b(current_duck);
-  tmp = RAM[0x0414 + current_duck];
+  DrawDuck(current_duck);
+  tmp = duck[current_duck].mode;
   if (tmp >= 2) /* 0x25f9 */
     goto label_2675;
-  tmp = RAM[0x041e + current_duck];
+  tmp = duck[current_duck].dir;
   if ((tmp & 1) != 0) /* 0x25ff */
     goto label_2633;
   if ((tmp & 2) != 0) /* 0x2602 */
     goto label_2649;
   if ((tmp & 4) != 0) /* 0x2605 */
     goto label_261d;
-  RAM[0x0405 + current_duck] -= 4;
-  tmp = RAM[0x0414 + current_duck];
+  duck[current_duck].y -= 4;
+  tmp = duck[current_duck].mode;
   if (tmp != 0) /* 0x2613 */
-    RAM[0x040f + current_duck]--;
+    duck[current_duck].tile_y--;
   tmp = 4;
   goto label_265f;
 label_261d:
-  RAM[0x0405 + current_duck] += 4;
-  tmp = RAM[0x0414 + current_duck];
+  duck[current_duck].y += 4;
+  tmp = duck[current_duck].mode;
   if (tmp != 0) /* 0x2629 */
-    RAM[0x040f + current_duck]++;
+    duck[current_duck].tile_y++;
   tmp = 4;
   goto label_265f;
 label_2633:
-  RAM[0x0400 + current_duck] -= 4;
-  tmp = RAM[0x0414 + current_duck];
+  duck[current_duck].x -= 4;
+  tmp = duck[current_duck].mode;
   if (tmp != 0) /* 0x263f */
-    RAM[0x040a + current_duck]--;
+    duck[current_duck].tile_x--;
   tmp = 2;
   goto label_265f;
 label_2649:
-  RAM[0x0400 + current_duck] += 4;
-  tmp = RAM[0x0414 + current_duck];
+  duck[current_duck].x += 4;
+  tmp = duck[current_duck].mode;
   if (tmp != 0) /* 0x263f */
-    RAM[0x040a + current_duck]++;
+    duck[current_duck].tile_x++;
   tmp = 0;
   goto label_265f;
 label_265f:
-  y = RAM[0x0414 + current_duck] ^ 1;
-  RAM[0x0414 + current_duck] = y;
+  y = duck[current_duck].mode ^ 1;
+  duck[current_duck].mode = y;
   tmp += y;
-  RAM[0x0419 + current_duck] = tmp;
-  do_234b(current_duck);
+  duck[current_duck].sprite = tmp;
+  DrawDuck(current_duck);
   return;
 label_2675:
-  tmp = RAM[0x0414 + current_duck] << 1;
+  tmp = duck[current_duck].mode << 1;
   tmp &= 0x1f;
-  RAM[0x0414 + current_duck] = tmp;
+  duck[current_duck].mode = tmp;
   if (tmp != 0)
     tmp = 6;
-  y = RAM[0x041e + current_duck];
+  y = duck[current_duck].dir;
   if (y == 1) /* 0x2687 */
     tmp += 2;
-  y = RAM[0x0414 + current_duck];
+  y = duck[current_duck].mode;
   if (y == 8) /* 0x2691 */
     tmp++;
-  RAM[0x0419 + current_duck] = tmp;
-  do_234b(current_duck);
+  duck[current_duck].sprite = tmp;
+  DrawDuck(current_duck);
   return;
 label_269d:
   /* Update bonus/timer.  */
@@ -1346,10 +1354,10 @@ static void CollisionDetect(void)
     goto label_2758;
   x = 0;
 label_2730:
-  tmp = (uint8_t)((RAM[0x0400 + x] - player_x) + 5);
+  tmp = (uint8_t)((duck[x].x - player_x) + 5);
   if (tmp >= 0x0b) /* 0x273d */
     goto label_2750;
-  tmp = (uint8_t)((RAM[0x0405 + x] - 1) - player_y + 0xe);
+  tmp = (uint8_t)((duck[x].y - 1) - player_y + 0xe);
   if (tmp >= 0x1d) /* 0x274c */
     goto label_2750;
   is_dead++;

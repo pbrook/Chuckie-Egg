@@ -44,7 +44,10 @@
 0x7f Sprite color
 0x400+N Duck X
 0x405+N Duck Y
+0x40a+N Duck tile X
+0x40f+N Duck tile Y
 0x414+N Duck mode
+0x419+N Duck sprite
 0x41e+N Duck direction
 0x0500+0x40*N - Player data
  2-6 Score

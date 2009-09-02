@@ -1,0 +1,44 @@
+0x1c Bonus hold timer
+0x20-0x23 - Player 0-3 Lives
+0x24-0x27 - Player 0-3 Level
+0x30 Big Duck X
+0x31 Big Duck Y
+0x32 Big Duck dX
+0x33 Big Duck dY
+0x37 Duck Speed
+0x38 Dig Duck Active
+0x39 Eggs left
+0x3d Start next level
+0x3e Extra life
+0x40 Player X
+0x41 Player Y
+0x42 Player X tile
+0x43 Player Y tile
+0x44 Player X partial
+0x45 Player Y partial
+0x46 X movement
+0x47 Y movement
+0x4d Current Level / 8
+0x4e (Player << 6) * 0xff ?
+0x4f Dead
+0x49 0 = Walking, 1 = Climbing, 2 = Jumping, 3 = Falling
+0x50 Current Level
+0x55 Has Lift
+0x57 Number of ducks
+0x58 Lift X
+0x59 Lift Y1
+0x5a Lift Y2
+0x5b Lift selector
+0x5c Current level mod 8
+0x5d Current Player
+0x5e Number of Players
+0x5f Number of active players
+0x60 Keys (right, left, down, up, jump, ??, ??, esc)
+0x7a Sprite width
+0x78 Sprite height
+0x76:0x77 Sprite address
+0x7f Sprite color
+0x400+N Duck X
+0x405+N Duck Y
+0x414+N Duck mode
+0x41e+N Duck direction

@@ -1,0 +1,12 @@
+AC_INIT(chuckie, 0.1, paul@nowt.org)
+
+AM_INIT_AUTOMAKE
+
+AC_CONFIG_HEADERS(config.h)
+
+AC_PROG_CC()
+
+AM_PATH_SDL(1.2.13)
+
+AC_CONFIG_FILES(Makefile)
+AC_OUTPUT

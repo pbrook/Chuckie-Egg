@@ -50,6 +50,8 @@ uint8_t player_partial_y;
 uint8_t move_x;
 uint8_t move_y;
 uint8_t buttons;
+uint32_t rand_high;
+uint8_t rand_low;
 
 typedef struct {
     uint8_t score[8];
@@ -507,6 +509,7 @@ static void MovePlayer(void)
 {
   int x, y, tmp;
   int tmp2;
+  int y1, y2;
 
   move_x = 0;
   move_y = 0;
@@ -627,14 +630,14 @@ label_2062:
       if (tmp < player_x) /* 0x2073 */
 	goto label_20bf;
       /* 0x2075 */
-      RAM[0x8b] = player_y - 0x11;
-      RAM[0x8c] = player_y - 0x13 + move_y;
+      y1 = player_y - 0x11;
+      y2 = player_y - 0x13 + move_y;
       tmp = lift_y1;
-      if (tmp == RAM[0x8b]) /* 0x2087 */
+      if (tmp == y1) /* 0x2087 */
 	goto label_208f;
-      if (tmp >= RAM[0x8b]) /* 0x2089 */
+      if (tmp >= y1) /* 0x2089 */
 	goto label_2099;
-      if (tmp < RAM[0x8c]) /* 0x208d */
+      if (tmp < y2) /* 0x208d */
 	goto label_2099;
 label_208f:
       if (current_lift != 0) /* 0x20a7 */
@@ -642,17 +645,17 @@ label_208f:
       goto label_20ac; /* 0x2096 */
 label_2099:
       tmp = lift_y2;
-      if (tmp == RAM[0x8b]) /* 0x209d */
+      if (tmp == y1) /* 0x209d */
 	goto label_20a5;
-      if (tmp >= RAM[0x8b])
+      if (tmp >= y1)
 	goto label_20bf;
-      if (tmp < RAM[0x8c]) /* 0x20a3 */
+      if (tmp < y2) /* 0x20a3 */
 	goto label_20bf;
 label_20a5:
       if (current_lift == 0) /* 0x20a7 */
 	tmp++;
 label_20ac:
-      tmp -= RAM[0x8b];
+      tmp -= y1;
       move_y = tmp + 1;
       player_fall = 0;
       player_mode = 4;
@@ -795,16 +798,15 @@ label_217b:
 	goto label_21be;
       x = 9;
 label_21be:
-      RAM[0x88] = x;
+      tmp2 = x;
       tmp = player_partial_x >> 1;
       goto label_21cd; /* 0x21c3 */
 label_21c6:
-      RAM[0x88] = 0x0c;
+      tmp2 = 0x0c;
       tmp = player_partial_y >> 1;
 label_21cd:
       x = 2;
-      tmp2 = x;
-      if (tmp2 != 0) { /* 0x21d3 */
+      if (x != 0) { /* 0x21d3 */
 	  tmp = (tmp & 1) << 1;
       }
       x = player_mode;
@@ -821,7 +823,7 @@ label_21e7:
 	goto label_21ed;
       tmp = 0;
 label_21ed:
-      tmp += RAM[0x88];
+      tmp += tmp2;
       player_sprite = tmp;
       DrawPlayer();
       x = player_tilex;
@@ -829,24 +831,19 @@ label_21ed:
       tmp = player_partial_y;
       if (tmp >= 4) /* 0x21fd */
 	y++;
-      tmp2 = y;
       tmp = Do_ReadMap(x, y); /* 0x2202 */
-      RAM[0x88] = tmp;
-      tmp &= 0x0c;
-      if (tmp == 0) /* 0x2209 */
+      if ((tmp & 0x0c) == 0) /* 0x2209 */
 	goto label_2275;
-      tmp &= 0x08;
-      if (tmp != 0) /* 0x220d */
+      if ((tmp & 0x08) != 0) /* 0x220d */
 	goto label_2248;
       /* Got egg */
       eggs_left--;
       /* 0x2211 */
       /* BEEP(6) */
       /* 0x221f */
-      tmp = (RAM[0x88] >> 4);
+      tmp >>= 4;
       player_data->egg[tmp]--;
       x = player_tilex;
-      y = tmp2;
       do_22fe(x, y); /* 0x2230 */
       tmp = (current_level >> 2) + 1;
       if (tmp >= 0x0a) /* 0x223c */
@@ -858,10 +855,9 @@ label_2248:
       /* Got grain */
       /* BEEP(5) */
       /* 0x2256 */
-      tmp = (RAM[0x88] >> 4);
+      tmp >>= 4;
       player_data->grain[tmp]--;
       x = player_tilex;
-      y = tmp2;
       do_2311(x, y); /* 0x2267 */
       tmp = 5;
       x = 6;
@@ -1008,13 +1004,11 @@ static void MoveLift(void)
 }
 
 /* popcount */
-static int do_25a9(void)
+static int do_25a9(int tmp)
 {
   int x;
-  int tmp;
 
   x = 0;
-  tmp = RAM[0x8d];
 label_25ad:
   if ((tmp & 1) != 0) /* 0x25ae */
     x++;
@@ -1026,19 +1020,11 @@ label_25ad:
 
 static void do_1aa4(void)
 {
-  int tmp;
-  int c1;
-  int c2;
+  int carry;
 
-  tmp = (RAM[0x66] & 0x48) + 0x38;
-  c1 = (tmp & 0x40) != 0;
-  c2 = RAM[0x69] >> 7;
-  RAM[0x69] = (RAM[0x69] << 1) | c1;
-  c1 = RAM[0x68] >> 7;
-  RAM[0x68] = (RAM[0x68] << 1) | c2;
-  c2 = RAM[0x67] >> 7;
-  RAM[0x67] = (RAM[0x67] << 1) | c1;
-  RAM[0x66] = (RAM[0x66] << 1) | c2;
+  carry = (((rand_low & 0x48) + 0x38) & 0x40) != 0;
+  rand_high = (rand_high << 1) | carry;
+  rand_low = (rand_low << 1) | ((rand_high >> 24) & 1);
 }
 
 static void DrawTimer(int n)
@@ -1080,6 +1066,7 @@ static void MoveDucks(void)
   int flag;
   int duck_look;
   int tmp2;
+  int newdir;
 
   /* Big Duck.  */
   duck_timer++;
@@ -1145,32 +1132,23 @@ label_24b5:
     goto label_25ef;
   if (tmp >= 1) /* 0x24d0 */
     goto label_25b6;
-  RAM[0x8b] = duck[current_duck].tile_x;
-  RAM[0x8c] = duck[current_duck].tile_y;
-  RAM[0x8d] = 0;
-  x = RAM[0x8b] - 1;
-  y = RAM[0x8c] - 1;
-  tmp = Do_ReadMap(x, y); /* 0x24e9 */
+  x = duck[current_duck].tile_x;
+  y = duck[current_duck].tile_y;
+  newdir = 0;
+  tmp = Do_ReadMap(x - 1, y - 1); /* 0x24e9 */
   if ((tmp & 1) != 0)
-    RAM[0x8d] = 1;
-  x = RAM[0x8b] + 1;
-  y = RAM[0x8c] - 1;
-  tmp = Do_ReadMap(x, y); /* 0x24f8 */
+    newdir = 1;
+  tmp = Do_ReadMap(x + 1, y - 1); /* 0x24f8 */
   if ((tmp & 1) != 0)
-    RAM[0x8d] |= 2;
-  x = RAM[0x8b];
-  y = RAM[0x8c] - 1;
-  tmp = Do_ReadMap(x, y); /* 0x250a */
+    newdir |= 2;
+  tmp = Do_ReadMap(x, y - 1); /* 0x250a */
   if ((tmp & 2) != 0)
-    RAM[0x8d] |= 8;
-  x = RAM[0x8b];
-  y = RAM[0x8c] + 2;
-  tmp = Do_ReadMap(x, y); /* 0x251d */
+    newdir |= 8;
+  tmp = Do_ReadMap(x, y + 2); /* 0x251d */
   if ((tmp & 2) != 0)
-    RAM[0x8d] |= 4;
-  x = do_25a9(); /* 0x252a */
-  if (x == 1) { /* 0x252f */
-      duck[current_duck].dir = RAM[0x8d];
+    newdir |= 4;
+  if (do_25a9(newdir) == 1) { /* 0x252f */
+      duck[current_duck].dir = newdir;
       goto label_257b; /* 0x2535 */
   }
   tmp = duck[current_duck].dir;
@@ -1179,20 +1157,18 @@ label_24b5:
   } else {
       tmp ^= 0xf3;
   }
-  RAM[0x8d] &= tmp;
-  x = do_25a9(); /* 0x254f */
-  if (x == 1) { /* 0x2554 */
-      duck[current_duck].dir = RAM[0x8d];
+  newdir &= tmp;
+  if (do_25a9(newdir) == 1) { /* 0x2554 */
+      duck[current_duck].dir = newdir;
       goto label_257b; /* 0x255d */
   }
-  RAM[0x8e] = RAM[0x8d];
+  tmp2 = newdir;
 label_2564:
   do_1aa4(); /* 0x2564 */
-  RAM[0x8d] = RAM[0x66] & RAM[0x8e];
-  x = do_25a9(); /* 0x256d */
-  if (x != 1) /* 0x2572 */
+  newdir = rand_low & tmp2;
+  if (do_25a9(newdir) != 1) /* 0x2572 */
     goto label_2564;
-  duck[current_duck].dir = RAM[0x8d];
+  duck[current_duck].dir = newdir;
 label_257b:
   tmp = duck[current_duck].dir;
   tmp &= 3;
@@ -1201,14 +1177,10 @@ label_257b:
   tmp &= 1;
   if (tmp == 0) /* 0x2586 */
     goto label_2593;
-  x = RAM[0x8b] - 1;
-  y = RAM[0x8c];
-  tmp = Do_ReadMap(x, y); /* 0x258d */
+  tmp = Do_ReadMap(x - 1, y); /* 0x258d */
   goto label_259b;
 label_2593:
-  x = RAM[0x8b] + 1;
-  y = RAM[0x8c];
-  tmp = Do_ReadMap(x, y); /* 0x2598 */
+  tmp = Do_ReadMap(x + 1, y); /* 0x2598 */
 label_259b:
   tmp &= 8;
   if (tmp == 0)
@@ -1219,26 +1191,14 @@ label_259b:
 label_25b6:
   if (tmp != 4)
     goto label_25ef;
-  tmp = duck[current_duck].dir;
-  RAM[0x8b] = duck[current_duck].tile_x;
+  x = duck[current_duck].tile_x - 1;
   y = duck[current_duck].tile_y;
-  RAM[0x8c] = y;
-  x = RAM[0x8b] - 1;
-  tmp &= 1;
-  if (tmp == 0) /* 0x25cc */
+  if ((duck[current_duck].dir & 1) == 0) /* 0x25cc */
     x += 2;
-  RAM[0x8d] = x;
   tmp = Do_ReadMap(x, y); /* 0x25d2 */
-  tmp2 = tmp;
-  tmp &= 8;
   if ((tmp & 8) == 0) /* 0x25d9 */
     goto label_25ef;
-  tmp = tmp2;
-  tmp = (tmp >> 4);
-  x = tmp;
-  player_data->grain[x]--;
-  x = RAM[0x8d];
-  y = RAM[0x8c];
+  player_data->grain[tmp >> 4]--;
   do_2311(x, y); /* 0x25ec */
 label_25ef:
   DrawDuck(current_duck);
@@ -1510,10 +1470,8 @@ static void SetupLevel(void)
   extra_life = 0;
   is_dead = 0;
   bonus_hold = 0;
-  RAM[0x66] = 0x76;
-  RAM[0x67] = 0x76;
-  RAM[0x68] = 0x76;
-  RAM[0x69] = 0x76;
+  rand_high = 0x767676;
+  rand_low = 0x76;
 }
 
 SDLKey keys[8] = {

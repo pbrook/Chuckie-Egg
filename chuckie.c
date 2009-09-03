@@ -5,6 +5,8 @@
 
 #include "SDL.h"
 
+#include "data.h"
+
 #define NUM_PLAYERS 1
 
 int is_dead;
@@ -73,9 +75,6 @@ struct {
     uint8_t dir;
 } duck[5];
 
-#include "ram.c"
-#define LD2(addr) (RAM[addr] | (RAM[(addr) + 1] << 8))
-
 SDL_Surface *sdlscreen;
 
 void die(const char *msg, ...)
@@ -92,7 +91,7 @@ uint8_t pixels[160 * 256];
 
 static void Do_RenderSprite(int x, int y, int sprite, int color)
 {
-    uint8_t *src;
+    const uint8_t *src;
     uint8_t srcbits;
     int bits;
     int sx;
@@ -101,10 +100,9 @@ static void Do_RenderSprite(int x, int y, int sprite, int color)
     uint8_t *dest;
 
     y = y ^ 0xff;
-    src = &RAM[0x1100 + (sprite << 2)];
-    sx = src[0];
-    sy = src[1];
-    src = &RAM[src[2] + (src[3] << 8)];
+    sx = sprites[sprite].x;
+    sy = sprites[sprite].y;
+    src = sprites[sprite].data;
     dest = &pixels[x + y * 160];
 
     bits = 0;
@@ -144,7 +142,7 @@ static void DrawLives(int player)
   if (i > 8)
     i = 8;
   while (i--) {
-    Do_RenderSprite(x, 0xee, 0x2f, 4);
+    Do_RenderSprite(x, 0xee, SPRITE_HAT, 4);
     x += 4;
   }
 }
@@ -155,15 +153,15 @@ static void do_1cc3(void)
 {
   int tmp;
 
-  Do_RenderSprite(0, 0xf8, 0x29, 2); /* 0x1cd3 */
+  Do_RenderSprite(0, 0xf8, SPRITE_SCORE, 2); /* 0x1cd3 */
   tmp = current_player * 0x22 + 0x1b;
-  Do_RenderSprite(tmp, 0xf8, 0x2a, 2); /* 0x1cee */
+  Do_RenderSprite(tmp, 0xf8, SPRITE_BLANK, 2); /* 0x1cee */
   for (tmp = 0; tmp < num_players; tmp++) {
       DrawLives(tmp);
   }
-  Do_RenderSprite(0, 0xe8, 0x2b, 2); /* 0x1d10 */
-  Do_RenderSprite(0x1b, 0xe7, current_player + 0x20, 2); /* 0x1d22 */
-  Do_RenderSprite(0x24, 0xe8, 0x2c, 2); /* 0x1d31 */
+  Do_RenderSprite(0, 0xe8, SPRITE_PLAYER, 2); /* 0x1d10 */
+  Do_RenderSprite(0x1b, 0xe7, current_player + SPRITE_1, 2); /* 0x1d22 */
+  Do_RenderSprite(0x24, 0xe8, SPRITE_LEVEL, 2); /* 0x1d31 */
 
   tmp = current_level + 1;
   Do_RenderDigit(0x45, 0xe7, tmp % 10);
@@ -172,13 +170,13 @@ static void do_1cc3(void)
   if (tmp > 10)
     Do_RenderDigit(0x3b, 0xe7, tmp / 10);
 
-  Do_RenderSprite(0x4e, 0xe8, 0x2d, 2); /* 0x1d8b */
+  Do_RenderSprite(0x4e, 0xe8, SPRITE_BONUS, 2); /* 0x1d8b */
 
   Do_RenderDigit(0x66, 0xe7, bonus[0]); /* 0x1d94 */
   Do_RenderDigit(0x6b, 0xe7, bonus[1]);
   Do_RenderDigit(0x70, 0xe7, bonus[2]);
   Do_RenderDigit(0x75, 0xe7, 0); /* 0x1daf */
-  Do_RenderSprite(0x7e, 0xe8, 0x2e, 2); /* 0x1dbe */
+  Do_RenderSprite(0x7e, 0xe8, SPRITE_TIME, 2); /* 0x1dbe */
 
   tmp = current_level >> 4;
   if (tmp > 8) tmp = 8;
@@ -219,24 +217,25 @@ static void LoadLevel(void)
     int num_walls;
     int num_ladders;
     int num_grain;
+    const uint8_t *p;
 
     do_1cc3();
 
-    addr = LD2(0x0cc0 + ((current_level & 7) << 1));
-    num_walls = RAM[addr++];
-    num_ladders = RAM[addr++];
-    have_lift = RAM[addr++];
-    num_grain = RAM[addr++];
-    num_ducks = RAM[addr++];
+    p = levels[current_level & 7];
+    num_walls = *(p++);
+    num_ladders = *(p++);
+    have_lift = *(p++);
+    num_grain = *(p++);
+    num_ducks = *(p++);
     /* 0x1b64 */
     for (i = 0; i < 0x200; i++)
       levelmap[i] = 0;
 
     /* 0x1b70 */
     while (num_walls--) {
-	y = RAM[addr++];
-	x = RAM[addr++];
-	i = RAM[addr++] - x;
+	y = *(p++);
+	x = *(p++);
+	i = *(p++) - x;
 
 label_1b90:
 	Do_InitTile(x, y, 1, 1, 3); /* 0x1b96 */
@@ -247,16 +246,16 @@ label_1b90:
     }
 
     while (num_ladders--) {
-	x = RAM[addr++];
-	y = RAM[addr++];
-	i = RAM[addr++] - y;
+	x = *(p++);
+	y = *(p++);
+	i = *(p++) - y;
 
 label_1bc6:
 	tmp = levelmap[x + y * 20];
 	if (tmp) { /* 0x1bcd */
-	  Do_RenderSprite(x << 3, (y << 3) | 7, tmp, 3);
+	    Do_RenderSprite(x << 3, (y << 3) | 7, SPRITE_WALL, 3);
 	}
-	Do_InitTile(x, y, 2, tmp | 2, 2); /* 0x1be4 */
+	Do_InitTile(x, y, SPRITE_LADDER, tmp | 2, 2); /* 0x1be4 */
 	y++;
 	i--;
 	if (i >= 0) /* 0x1bf4 */
@@ -265,7 +264,7 @@ label_1bc6:
 
     if (have_lift) { /* 0x1bfc */
 	int tmp;
-	tmp = RAM[addr++];
+	tmp = *(p++);
 	tmp <<= 3;
 	lift_x = tmp;
     }
@@ -273,35 +272,37 @@ label_1bc6:
     /* 0c1ca0 */
     eggs_left = 0;
     for (i = 0; i < 0xc; i++) {
-	x = RAM[addr++];
-	y = RAM[addr++];
+	x = *(p++);
+	y = *(p++);
 	if (player_data->egg[i] == 0) {
-	    Do_InitTile(x, y, 3, (i << 4) | 4, 1);
+	    Do_InitTile(x, y, SPRITE_EGG, (i << 4) | 4, 1);
 	    eggs_left++;
 	}
     }
 
     for (i = 0; i < num_grain; i++) {
-	x = RAM[addr++];
-	y = RAM[addr++];
+	x = *(p++);
+	y = *(p++);
 	if (player_data->grain[i] == 0) {
 	    Do_InitTile(x, y, 4, (i << 4) | 8, 2);
 	}
     }
 
     /* 0x1c94 */
-    Do_RenderSprite(0, 0xdc, have_big_duck ? 0x14 : 0x13, 4); /* 0x1caa */
+    Do_RenderSprite(0, 0xdc, have_big_duck ? SPRITE_CAGE_OPEN
+					   : SPRITE_CAGE_CLOSED, 4);
 
     for (i = 0; i < 5 ; i++) {
-	duck[i].tile_x = RAM[addr++];
-	duck[i].tile_y = RAM[addr++];
+	duck[i].tile_x = *(p++);
+	duck[i].tile_y = *(p++);
     }
 }
 
 /* DrawBigDuck */
 static void DrawBigDuck(void)
 {
-  Do_RenderSprite(big_duck_x, big_duck_y, big_duck_sprite + 0x0f, 4);
+  Do_RenderSprite(big_duck_x, big_duck_y,
+		  big_duck_sprite + SPRITE_BIGDUCK_R1, 4);
 }
 
 /* DrawDuck */
@@ -330,7 +331,7 @@ static void DrawLastLife(void)
   if (tmp >= 9) /* 0x2f64 */
       return;
   tmp = (tmp << 2) + (current_player * 0x22) + 0xd + 0xa;
-  Do_RenderSprite(tmp, 0xee, 0x2f, 4);
+  Do_RenderSprite(tmp, 0xee, SPRITE_HAT, 4);
 }
 
 static void StartLevel(void)
@@ -789,26 +790,20 @@ label_217b:
       if (((tmp - 8) & 0x80) == 0) /* 0x21ac */
 	player_tiley++;
       player_partial_y = tmp & 7;
-      x = 6;
       /* 0x21b6 */
       tmp = player_face;
-      if (tmp == 0) /* 0x21b8 */
-	goto label_21c6;
-      if ((tmp & 0x80) == 0) /* 0x21ba */
-	goto label_21be;
-      x = 9;
-label_21be:
-      tmp2 = x;
-      tmp = player_partial_x >> 1;
-      goto label_21cd; /* 0x21c3 */
-label_21c6:
-      tmp2 = 0x0c;
-      tmp = player_partial_y >> 1;
-label_21cd:
-      x = 2;
-      if (x != 0) { /* 0x21d3 */
-	  tmp = (tmp & 1) << 1;
+      if (tmp == 0) { /* 0x21b8 */
+	  tmp2 = SPRITE_PLAYER_UP;
+	  tmp = player_partial_y >> 1;
+      } else {
+	  if ((tmp & 0x80) != 0) /* 0x21ba */
+	    tmp2 = SPRITE_PLAYER_L;
+	  else
+	    tmp2 = SPRITE_PLAYER_R;
+	  tmp = player_partial_x >> 1;
       }
+      if (tmp > 1)
+	tmp = (tmp & 1) << 1;
       x = player_mode;
       if (x != 1) /* 0x21dc */
 	goto label_21e7;

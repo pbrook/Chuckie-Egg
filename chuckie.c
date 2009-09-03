@@ -349,81 +349,57 @@ static void StartLevel(void)
   DrawLastLife();
 }
 
+/* Returns nonzero if blocked.  */
 static int MoveSideways(void)
 {
   int tmp, x, y;
-  tmp = move_x;
-  if ((tmp & 0x80) != 0)
-    goto label_227e;
-  if (tmp != 0)
-    goto label_22bd;
-  return 0;
-label_227e:
-  if (player_x == 0)
-    goto label_22fc;
-  if (player_partial_x >= 2)
-    goto label_22fa;
-  if (move_y == 2)
-    goto label_22fa;
-  x = player_tilex - 1;
-  y = player_tiley;
-  tmp = (uint8_t)(player_partial_y - move_y);
-  if (tmp < 8)
-    goto label_22a5;
-  if (((tmp - 8) & 0x80) == 0)
-    goto label_22a4;
-  y--;
-  goto label_22a5;
-label_22a4:
-  y++;
-label_22a5:
-  tmp = Do_ReadMap(x, y);
-  if (tmp == 1)
-    goto label_22fc;
-  if ((move_y & 0x80) == 0)
-    goto label_22fa;
-  x = player_tilex - 1;
-  y++;
-  tmp = Do_ReadMap(x, y);
-  if (tmp == 1)
-    goto label_22fc;
-  else
-    goto label_22fa;
-label_22bd:
+  tmp = (int8_t)move_x;
+  if (tmp == 0)
+    return 0;
+  if (tmp < 0) {
+      if (player_x == 0)
+	return 1;
+      if (player_partial_x >= 2)
+	return 0;
+      if (move_y == 2)
+	return 0;
+
+      x = player_tilex - 1;
+      y = player_tiley;
+      tmp = player_partial_y - (int8_t)move_y;
+      if (tmp < 0)
+	y--;
+      else if (tmp >= 8)
+	y++;
+      if (Do_ReadMap(x, y) == 1)
+	return 1;
+      if ((move_y & 0x80) == 0)
+	return 0;
+      x = player_tilex - 1;
+      y++;
+      return (Do_ReadMap(x, y) == 1);
+  }
   tmp = player_x;
   if (tmp >= 0x98)
-    goto label_22fc;
-  tmp = player_partial_x;
-  if (tmp < 5)
-    goto label_22fa;
+    return 1;
+  if (player_partial_x < 5)
+    return 0;
   if (move_y == 2)
-    goto label_22fa;
+    return 0;
   x = player_tilex + 1;
   y = player_tiley;
-  tmp = (uint8_t)(player_partial_y + move_y);
-  if (tmp < 8)
-    goto label_22e4;
-  if (((tmp - 8) & 0x80) == 0)
-    goto label_22e3;
-  y--;
-  goto label_22e4;
-label_22e3:
-  y++;
-label_22e4:
-  tmp = Do_ReadMap(x, y);
-  if (tmp == 1)
-    goto label_22fc;
+  tmp = player_partial_y + (int8_t)move_y;
+  if (tmp < 0)
+    y--;
+  else if (tmp >= 8)
+    y++;
+  if (Do_ReadMap(x, y) == 1)
+    return 1;
   if ((move_y & 0x80) == 0)
-    goto label_22fa;
+    return 0;
   x = player_tilex + 1;
   y++;
-  tmp = Do_ReadMap(x, y);
-  if (tmp == 1)
-    goto label_22fc;
-label_22fa:
-  return 0;
-label_22fc:
-  return 1;
+  return (Do_ReadMap(x, y) == 1);
 }
 
 static void RemoveGrain(int x, int y)

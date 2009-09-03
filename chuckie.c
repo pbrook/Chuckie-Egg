@@ -1,10 +1,11 @@
 #include "config.h"
 
-#include <stdint.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "SDL.h"
-
+#include "chuckie.h"
 #include "data.h"
 
 #define NUM_PLAYERS 1
@@ -74,18 +75,6 @@ struct {
     uint8_t sprite;
     uint8_t dir;
 } duck[5];
-
-SDL_Surface *sdlscreen;
-
-void die(const char *msg, ...)
-{
-  va_list va;
-  va_start(va, msg);
-  fprintf(stderr, "Error: ");
-  vfprintf(stderr, msg, va);
-  va_end(va);
-  exit(1);
-}
 
 uint8_t pixels[160 * 256];
 
@@ -1435,8 +1424,7 @@ label_29ae:
   return 0x29ae;
 }
 
-
-void start_game()
+static void start_game(void)
 {
   int i, j;
   num_players = active_players = NUM_PLAYERS;
@@ -1452,7 +1440,6 @@ void start_game()
   RestorePlayerState();
 }
 
-/* 0x2dc0 */
 static void SetupLevel(void)
 {
   int arg;
@@ -1469,76 +1456,12 @@ static void SetupLevel(void)
   rand_low = 0x76;
 }
 
-SDLKey keys[8] = {
-    SDLK_PERIOD,
-    SDLK_COMMA,
-    SDLK_z,
-    SDLK_a,
-    SDLK_SPACE
-};
-/* Read inputs, and wait until the start of the next frame.  */
-static void PollKeys(void)
-{
-  SDL_Event event;
-  int i;
-
-  while (1) {
-      if (SDL_WaitEvent(&event) == 0) {
-	  die("SDL_WaitEvent: %s\n", SDL_GetError());
-      }
-      switch (event.type) {
-      case SDL_QUIT:
-	  SDL_Quit();
-	  exit(0);
-	  break;
-      case SDL_USEREVENT:
-	  return;
-      case SDL_KEYDOWN:
-      case SDL_KEYUP:
-	  for (i = 0; i < 8; i++) {
-	      if (event.key.keysym.sym == keys[i]) {
-		  if (event.key.state == SDL_PRESSED)
-		      buttons |= 1 << i;
-		  else
-		      buttons &= ~(1 << i);
-	      }
-	  }
-	  break;
-      }
-  }
-}
-
 static void ClearScreen(void)
 {
   memset(pixels, 0, 160*256);
 }
 
-static void RenderFrame(void)
-{
-  uint8_t *dest;
-  uint8_t *src;
-  uint8_t color;
-  int x;
-  int y;
-
-  if (SDL_LockSurface(sdlscreen) > 0)
-    die("SDL_LockScreen: %s\n", SDL_GetError());
-
-  dest = sdlscreen->pixels;
-  src = pixels;
-  for (y = 0; y < 256; y++) {
-      for (x = 0; x < 160; x++) {
-	  color = *(src++);
-	  *(dest++) = color;
-	  *(dest++) = color;
-      }
-      dest += sdlscreen->pitch - 320;
-  }
-  SDL_UnlockSurface(sdlscreen);
-  SDL_UpdateRect(sdlscreen, 0, 0, 0, 0);
-}
-
-void run_game()
+void run_game(void)
 {
 new_game:
   start_game();
@@ -1570,38 +1493,4 @@ next_frame:
   default:
       abort();
   }
-}
-
-#define YELLOW {0xff, 0xff, 0} /* Player, lift, big duck */
-#define BLUE {0, 0xff, 0xff} /* Small duck */
-#define GREEN {0, 0xff, 0} /* Floor */
-#define PURPLE {0xff, 0, 0xff} /* Ladder */
-
-Uint32 do_timer(Uint32 interval, void *param)
-{
-  SDL_Event event;
-  event.type = SDL_USEREVENT;
-  SDL_PushEvent(&event);
-  return interval;
-}
-
-int main()
-{
-  SDL_Color palette[16] = {
-    {0, 0, 0}, YELLOW, PURPLE, GREEN,
-    YELLOW, YELLOW, YELLOW, YELLOW, 
-    BLUE, BLUE, BLUE, BLUE,
-    YELLOW, YELLOW, YELLOW, YELLOW, 
-  };
-
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1) {
-      die("SDL_Init: %s\n", SDL_GetError());
-  }
-
-  sdlscreen = SDL_SetVideoMode(320, 256, 8, SDL_SWSURFACE);
-  SDL_SetPalette(sdlscreen, SDL_LOGPAL | SDL_PHYSPAL, palette, 0, 16);
-
-  SDL_AddTimer(30, do_timer, NULL);
-
-  run_game();
 }

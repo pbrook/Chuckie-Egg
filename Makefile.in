@@ -51,7 +51,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_chuckie_OBJECTS = chuckie-chuckie.$(OBJEXT) \
-	chuckie-spritedata.$(OBJEXT) chuckie-leveldata.$(OBJEXT)
+	chuckie-spritedata.$(OBJEXT) chuckie-leveldata.$(OBJEXT) \
+	chuckie-sdl.$(OBJEXT)
 chuckie_OBJECTS = $(am_chuckie_OBJECTS)
 chuckie_LDADD = $(LDADD)
 chuckie_LINK = $(CCLD) $(chuckie_CFLAGS) $(CFLAGS) $(chuckie_LDFLAGS) \
@@ -165,7 +166,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-chuckie_SOURCES = chuckie.c spritedata.c leveldata.c
+chuckie_SOURCES = chuckie.c spritedata.c leveldata.c sdl.c
 chuckie_LDFLAGS = $(SDL_LIBS)
 chuckie_CFLAGS = $(SDL_CFLAGS)
 all: config.h
@@ -273,6 +274,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-chuckie.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-leveldata.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-sdl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-spritedata.Po@am__quote@
 
 .c.o:
@@ -330,6 +332,20 @@ chuckie-leveldata.obj: leveldata.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='leveldata.c' object='chuckie-leveldata.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-leveldata.obj `if test -f 'leveldata.c'; then $(CYGPATH_W) 'leveldata.c'; else $(CYGPATH_W) '$(srcdir)/leveldata.c'; fi`
+
+chuckie-sdl.o: sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-sdl.o -MD -MP -MF $(DEPDIR)/chuckie-sdl.Tpo -c -o chuckie-sdl.o `test -f 'sdl.c' || echo '$(srcdir)/'`sdl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-sdl.Tpo $(DEPDIR)/chuckie-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl.c' object='chuckie-sdl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-sdl.o `test -f 'sdl.c' || echo '$(srcdir)/'`sdl.c
+
+chuckie-sdl.obj: sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-sdl.obj -MD -MP -MF $(DEPDIR)/chuckie-sdl.Tpo -c -o chuckie-sdl.obj `if test -f 'sdl.c'; then $(CYGPATH_W) 'sdl.c'; else $(CYGPATH_W) '$(srcdir)/sdl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-sdl.Tpo $(DEPDIR)/chuckie-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl.c' object='chuckie-sdl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-sdl.obj `if test -f 'sdl.c'; then $(CYGPATH_W) 'sdl.c'; else $(CYGPATH_W) '$(srcdir)/sdl.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

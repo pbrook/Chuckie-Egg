@@ -219,41 +219,30 @@ static void LoadLevel(void)
     while (num_walls--) {
 	y = *(p++);
 	x = *(p++);
-	i = *(p++) - x;
-
-label_1b90:
-	Do_InitTile(x, y, 1, 1, 3);
-	x++;
-	i--;
-	if (i >= 0)
-	  goto label_1b90;
+	i = *(p++);
+	while (x <= i) {
+	    Do_InitTile(x, y, 1, 1, 3);
+	    x++;
+	}
     }
 
     while (num_ladders--) {
 	x = *(p++);
 	y = *(p++);
-	i = *(p++) - y;
-
-label_1bc6:
-	tmp = levelmap[x + y * 20];
-	if (tmp) {
-	    Do_RenderSprite(x << 3, (y << 3) | 7, SPRITE_WALL, 3);
+	i = *(p++);
+	while (y <= i) {
+	    tmp = levelmap[x + y * 20];
+	    if (tmp)
+		Do_RenderSprite(x << 3, (y << 3) | 7, SPRITE_WALL, 3);
+	    Do_InitTile(x, y, SPRITE_LADDER, tmp | 2, 2);
+	    y++;
 	}
-	Do_InitTile(x, y, SPRITE_LADDER, tmp | 2, 2);
-	y++;
-	i--;
-	if (i >= 0)
-	  goto label_1bc6;
     }
 
     if (have_lift) {
-	int tmp;
-	tmp = *(p++);
-	tmp <<= 3;
-	lift_x = tmp;
+	lift_x = *(p++) << 3;
     }
 
-    /* 0c1ca0 */
     eggs_left = 0;
     for (i = 0; i < 0xc; i++) {
 	x = *(p++);
@@ -338,17 +327,13 @@ static void StartLevel(void)
   if (current_level >= 24) {
       num_ducks = 5;
   }
-  i = -1;
-label_2eed:
-  i++;
-  if (i < num_ducks) {
+  for (i = 0; i < num_ducks; i++) {
       duck[i].x = duck[i].tile_x << 3;
       duck[i].y = (duck[i].tile_y << 3) + 0x14;
       duck[i].mode = 0;
       duck[i].sprite = 0;
       duck[i].dir = 2;
       DrawDuck(i);
-      goto label_2eed;
   }
   /* Delay(3) */
   player_x = 0x3c;
@@ -441,12 +426,7 @@ label_22fc:
   return 1;
 }
 
-static void do_22fe(int x, int y)
-{
-  Do_InitTile(x, y, 3, 0, 1);
-}
-
-static void do_2311(int x, int y)
+static void RemoveGrain(int x, int y)
 {
   Do_InitTile(x, y, 4, 0, 2);
 }
@@ -462,8 +442,7 @@ static void ScoreChange(int n, int oldval, int newval)
     Do_RenderDigit(x, 0xf7, newval);
 }
 
-/* AddScore */
-static void do_1ab5(int n, int val)
+static void AddScore(int n, int val)
 {
     int oldval;
 
@@ -800,7 +779,7 @@ label_21ed:
 	  tmp >>= 4;
 	  player_data->egg[tmp]--;
 	  x = player_tilex;
-	  do_22fe(x, y);
+	  Do_InitTile(x, y, 3, 0, 1);
 	  tmp = (current_level >> 2) + 1;
 	  if (tmp >= 10)
 	    tmp = 10;
@@ -811,7 +790,7 @@ label_21ed:
 	  tmp >>= 4;
 	  player_data->grain[tmp]--;
 	  x = player_tilex;
-	  do_2311(x, y);
+	  RemoveGrain(x, y);
 	  AddScore(6, 5);
 	  bonus_hold = 14;
       }
@@ -948,22 +927,12 @@ static void MoveLift(void)
   current_lift = !current_lift;
 }
 
-/* popcount */
-static int do_25a9(int tmp)
+static int popcount(int val)
 {
-  int x;
-
-  x = 0;
-label_25ad:
-  if ((tmp & 1) != 0)
-    x++;
-  tmp >>= 1;
-  if (tmp != 0)
-    goto label_25ad;
-  return x;
+  return __builtin_popcount(val);
 }
 
-static void do_1aa4(void)
+static void FrobRandom(void)
 {
   int carry;
 
@@ -1092,7 +1061,7 @@ label_24b5:
   tmp = Do_ReadMap(x, y + 2);
   if ((tmp & 2) != 0)
     newdir |= 4;
-  if (do_25a9(newdir) == 1) {
+  if (popcount(newdir) == 1) {
       duck[current_duck].dir = newdir;
       goto label_257b;
   }
@@ -1103,15 +1072,15 @@ label_24b5:
       tmp ^= 0xf3;
   }
   newdir &= tmp;
-  if (do_25a9(newdir) == 1) {
+  if (popcount(newdir) == 1) {
       duck[current_duck].dir = newdir;
       goto label_257b;
   }
   tmp2 = newdir;
 label_2564:
-  do_1aa4();
+  FrobRandom();
   newdir = rand_low & tmp2;
-  if (do_25a9(newdir) != 1)
+  if (popcount(newdir) != 1)
     goto label_2564;
   duck[current_duck].dir = newdir;
 label_257b:
@@ -1144,7 +1113,7 @@ label_25b6:
   if ((tmp & 8) == 0)
     goto label_25ef;
   player_data->grain[tmp >> 4]--;
-  do_2311(x, y);
+  RemoveGrain(x, y);
 label_25ef:
   DrawDuck(current_duck);
   tmp = duck[current_duck].mode;
@@ -1247,46 +1216,34 @@ static void MaybeAddExtraLife(void)
 
 static void CollisionDetect(void)
 {
-  int x;
-  int tmp;
-  /* Little ducks */
-  if (num_ducks == 0)
-    goto label_2758;
-  x = 0;
-label_2730:
-  tmp = (uint8_t)((duck[x].x - player_x) + 5);
-  if (tmp >= 0x0b)
-    goto label_2750;
-  tmp = (uint8_t)((duck[x].y - 1) - player_y + 0xe);
-  if (tmp >= 0x1d)
-    goto label_2750;
-  is_dead++;
-label_2750:
-  x++;
-  if (x < num_ducks)
-    goto label_2730;
-label_2758:
-  /* Big duck */
-  if (!have_big_duck)
-    return;
-  tmp = (uint8_t)(big_duck_x + 4 - player_x + 5);
-  if (tmp >= 0x0b)
-    return;
-  tmp = (uint8_t)(big_duck_y - 5 - player_y + 0x0e);
-  if (tmp >= 0x1d)
-    return;
-  is_dead++;
+    int n;
+    int x;
+    int tmp;
+    /* Little ducks */
+    for (n = 0; n < num_ducks; n++) {
+	if ((uint8_t)((duck[n].x - player_x) + 5) < 0x0b
+	    && (uint8_t)((duck[n].y - 1) - player_y + 0xe) < 0x1d)
+	  is_dead++;
+    }
+    /* Big duck */
+    if (!have_big_duck)
+      return;
+    if ((uint8_t)(big_duck_x + 4 - player_x + 5) >= 0x0b)
+      return;
+    if ((uint8_t)(big_duck_y - 5 - player_y + 0x0e) >= 0x1d)
+      return;
+    is_dead++;
 }
 
 static void SavePlayerState(void)
 {
-  int i;
-  level[current_player] = current_level;
-  for (i = 0; i < 4; i++)
-    player_data->bonus[i] = bonus[i];
+    int i;
+    level[current_player] = current_level;
+    for (i = 0; i < 4; i++)
+      player_data->bonus[i] = bonus[i];
 }
 
-static void do_2dfe(void)
+static void ResetPlayer(void)
 {
   int a, b;
   int i;
@@ -1313,13 +1270,12 @@ static void RestorePlayerState(void)
     }
 }
 
-static void do_2f7c(int addr)
+static void PlayTune(int addr)
 {
-  /* Play tune */
+  /* Play tune 0x2f7c */
 }
 
-/* EndOfFrame */
-static int do_29f0(void)
+static int EndOfFrame(void)
 {
   int tmp;
   if (is_dead != 0)
@@ -1337,7 +1293,7 @@ label_2a05:
   if (zero_bonus)
     goto label_2a2b;
 label_2a09:
-  do_1ab5(6, 1);
+  AddScore(6, 1);
   ReduceBonus();
   MaybeAddExtraLife();
   tmp = timer_ticks[3];
@@ -1351,13 +1307,13 @@ label_2a2b:
   zero_bonus = 0;
   current_level++;
   SavePlayerState();
-  do_2dfe();
+  ResetPlayer();
   RestorePlayerState();
   return 0x29cf;
 label_2a39:
   /* Died */
   SavePlayerState();
-  do_2f7c(0x2fa6);
+  PlayTune(0x2fa6);
   tmp = --lives[current_player];
   if (tmp != 0)
     goto label_2a70;
@@ -1394,7 +1350,7 @@ static void start_game(void)
       for (j = 0; j < 8; j++) {
 	  player_data->score[j] = 0;
       }
-      do_2dfe();
+      ResetPlayer();
   }
   RestorePlayerState();
 }
@@ -1440,7 +1396,7 @@ next_frame:
   MaybeAddExtraLife();
   CollisionDetect();
   RenderFrame();
-  switch (do_29f0()) {
+  switch (EndOfFrame()) {
   case 0x29d8:
       goto next_frame;
   case 0x29cf:

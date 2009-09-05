@@ -366,7 +366,7 @@ static int MoveSideways(void)
 
       x = player_tilex - 1;
       y = player_tiley;
-      tmp = player_partial_y - (int8_t)move_y;
+      tmp = player_partial_y + (int8_t)move_y;
       if (tmp < 0)
 	y--;
       else if (tmp >= 8)
@@ -437,6 +437,77 @@ static void AddScore(int n, int val)
     }
 }
 
+static void AnimatePlayer(void)
+{
+    int tmp;
+    int x, y;
+
+    DrawPlayer();
+    player_x += move_x;
+    tmp = (int8_t)(player_partial_x + move_x);
+    if (tmp < 0)
+      player_tilex--;
+    if (tmp >= 8)
+      player_tilex++;
+    player_partial_x = tmp & 7;
+    player_y += move_y;
+    tmp = (int8_t)(player_partial_y + move_y);
+    if (tmp < 0)
+      player_tiley--;
+    if (tmp >= 8)
+      player_tiley++;
+    player_partial_y = tmp & 7;
+    if (player_face == 0) {
+	player_sprite = SPRITE_PLAYER_UP;
+	tmp = player_partial_y >> 1;
+    } else {
+	if ((player_face & 0x80) != 0)
+	  player_sprite = SPRITE_PLAYER_L;
+	else
+	  player_sprite = SPRITE_PLAYER_R;
+	tmp = player_partial_x >> 1;
+    }
+    if (tmp > 1)
+      tmp = (tmp & 1) << 1;
+
+    if (player_mode != 1) {
+	if (move_x == 0)
+	  tmp = 0;
+    } else {
+	if (move_y == 0)
+	  tmp = 0;
+    }
+    player_sprite += tmp;
+    DrawPlayer();
+    x = player_tilex;
+    y = player_tiley;
+    if (player_partial_y >= 4)
+      y++;
+    tmp = Do_ReadMap(x, y);
+    if ((tmp & 0x0c) == 0)
+      return;
+    if ((tmp & 0x08) == 0) {
+	/* Got egg */
+	eggs_left--;
+	/* BEEP(6) */
+	tmp >>= 4;
+	player_data->egg[tmp]--;
+	Do_InitTile(x, y, 3, 0, 1);
+	tmp = (current_level >> 2) + 1;
+	if (tmp >= 10)
+	  tmp = 10;
+	AddScore(5, tmp);
+    } else {
+	/* Got grain */
+	/* BEEP(5) */
+	tmp >>= 4;
+	player_data->grain[tmp]--;
+	RemoveGrain(x, y);
+	AddScore(6, 5);
+	bonus_hold = 14;
+    }
+}
+
 static void MovePlayer(void)
 {
   int x, y, tmp;
@@ -458,10 +529,9 @@ static void MovePlayer(void)
       move_y++;
   }
   move_y <<= 1;
-  tmp = player_mode;
-  if (tmp == 2) {
-      /* Jump */
-label_1f81:
+  switch (player_mode) {
+  case 2: /* Jump */
+do_jump:
       move_x = player_slide;
       tmp2 = move_y;
       tmp = player_fall >> 2;
@@ -481,25 +551,24 @@ label_1f81:
 	  goto label_2016;
       if (tmp2 == 0)
 	goto label_2016;
-      if ((tmp2 & 0x80) != 0)
-	goto label_1fed;
-      x = player_tilex;
-      y = player_tiley + 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 2) != 0)
-	  goto label_1fdb;
-      if (player_partial_y >= 4)
-	y++;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 2) == 0)
-	goto label_2016;
-label_1fdb:
-      player_mode = 1;
-      tmp = player_partial_y + move_y;
-      if (tmp & 1)
-	  move_y++;
-      goto label_20cd;
-label_1fed:
+      /* Grab lader */
+      if ((tmp2 & 0x80) == 0) {
+	  x = player_tilex;
+	  y = player_tiley + 1;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 2) == 0) {
+	      if (player_partial_y >= 4)
+		y++;
+	      tmp = Do_ReadMap(x, y);
+	      if ((tmp & 2) == 0)
+		goto label_2016;
+	  }
+	  player_mode = 1;
+	  tmp = player_partial_y + move_y;
+	  if (tmp & 1)
+	      move_y++;
+	  goto label_20cd;
+      }
       x = player_tilex;
       y = player_tiley;
       tmp = Do_ReadMap(x, y);
@@ -517,35 +586,29 @@ label_1fed:
       goto label_20cd;
 label_2016:
       tmp = (uint8_t)(move_y + player_partial_y);
-      if (tmp == 0)
-	goto label_2039;
-      if ((tmp & 0x80) == 0) {
+      if (tmp == 0) {
+	  x = player_tilex;
+	  y = player_tiley - 1;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 1) != 0)
+	    player_mode = 0;
+      } else if ((tmp & 0x80) == 0) {
 	  if (tmp != 8)
 	    goto label_2062;
 	  x = player_tilex;
 	  y = player_tiley;
 	  tmp = Do_ReadMap(x, y);
-	  if ((tmp & 1) == 0)
-	    goto label_2062;
-	  player_mode = 0;
-	  goto label_2062;
+	  if ((tmp & 1) != 0)
+	    player_mode = 0;
+      } else {
+	  x = player_tilex;
+	  y = player_tiley - 1;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 1) != 0) {
+	      player_mode = 0;
+	      move_y = -player_partial_y;
+	  }
       }
-      x = player_tilex;
-      y = player_tiley - 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 1) == 0)
-	goto label_2062;
-      player_mode = 0;
-      move_y = -player_partial_y;
-      goto label_2062;
-label_2039:
-      x = player_tilex;
-      y = player_tiley - 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 1) == 0)
-	goto label_2062;
-      player_mode = 0;
-      goto label_2062;
 label_2062:
       if (!have_lift)
 	goto label_20bf;
@@ -556,7 +619,7 @@ label_2062:
       if (tmp < player_x)
 	goto label_20bf;
       y1 = player_y - 0x11;
-      y2 = player_y - 0x13 + move_y;
+      y2 = player_y - 0x13 + (int8_t)move_y;
       tmp = lift_y1;
       if (tmp == y1)
 	goto label_208f;
@@ -591,22 +654,20 @@ label_20bf:
 	  player_slide = move_x;
       }
 label_20cd:
-      goto label_217b;
-  } else if (tmp == 3) {
-      /* Fall */
+      break;
+  case 3: /* Fall */
       player_fall++;
       tmp = player_fall;
       if (tmp < 4) {
 	  move_x = player_slide;
 	  move_y = 0xff;
-	  goto label_2108;
+      } else {
+	  move_x = 0;
+	  tmp = player_fall >> 2;
+	  if (tmp >= 4)
+	    tmp = 3;
+	  move_y = ~tmp;
       }
-      move_x = 0;
-      tmp = player_fall >> 2;
-      if (tmp >= 4)
-	tmp = 3;
-      move_y = ~tmp;
-label_2108:
       tmp = (int8_t)(move_y + player_partial_y);
       if (tmp == 0)
 	goto label_212b;
@@ -627,218 +688,119 @@ label_212b:
       if ((tmp & 1) != 0)
 	player_mode = 0;
 label_213b:
-      goto label_217b;
-  } else if (tmp == 1) {
-      /* Climb */
+      break;
+  case 1: /* Climb */
       if ((buttons & 0x10) != 0)
-	goto label_20d0;
-      tmp = move_x;
-      if (tmp == 0)
-	goto label_1f4a;
-      x = player_partial_y;
-      if (x != 0)
-	goto label_1f4a;
-      x = player_tilex;
-      y = player_tiley - 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 1) == 0)
-	goto label_1f4a;
-      move_y = 0;
-      player_mode = 0;
-      goto label_1f7a;
-label_1f4a:
-      move_x = 0;
-      if (move_y == 0)
-	goto label_1f7a;
-      if (player_partial_y != 0)
-	goto label_1f7a;
-      if ((move_y & 0x80) != 0)
-	goto label_1f6c;
-      x = player_tilex;
-      y = player_tiley + 2;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 2) == 0)
-	move_y = 0;
-      goto label_1f7a;
-label_1f6c:
-      x = player_tilex;
-      y = player_tiley - 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 2) == 0)
-	move_y = 0;
-label_1f7a:
+	goto start_jump;
+      if (move_x != 0 && player_partial_y == 0) {
+	  x = player_tilex;
+	  y = player_tiley - 1;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 1) == 0)
+	      goto do_climb;
+	  move_y = 0;
+	  player_mode = 0;
+      } else {
+do_climb:
+	  move_x = 0;
+	  if (move_y != 0 && player_partial_y == 0) {
+	      if ((move_y & 0x80) == 0) {
+		  x = player_tilex;
+		  y = player_tiley + 2;
+		  tmp = Do_ReadMap(x, y);
+		  if ((tmp & 2) == 0)
+		    move_y = 0;
+	      } else {
+		  x = player_tilex;
+		  y = player_tiley - 1;
+		  tmp = Do_ReadMap(x, y);
+		  if ((tmp & 2) == 0)
+		    move_y = 0;
+	      }
+	  }
+      }
       player_face = 0;
-      goto label_217b;
-  } else if (tmp != 0) {
+      break;
+  case 4: /* On lift */
       if ((buttons & 0x10) != 0)
-	goto label_20d0;
-      tmp = (uint8_t)(lift_x - 1);
-      if (tmp >= player_x)
-	goto label_2156;
-      tmp = (uint8_t)(tmp + 0x0a);
-      if (tmp >= player_x)
-	goto label_2160;
-label_2156:
-      player_fall = 0;
-      player_slide = 0;
-      player_mode = 3;
-label_2160:
+	goto start_jump;
+      if (lift_x - 1 >= player_x || lift_x + 9 < player_x) {
+	  player_fall = 0;
+	  player_slide = 0;
+	  player_mode = 3;
+      }
       move_y = 1;
-      tmp= move_x;
-      if (tmp != 0)
-	player_face = tmp;
+      if (move_x != 0)
+	player_face = move_x;
       if (MoveSideways()) {
 	  move_x = 0;
       }
-      tmp = player_y;
-      if (tmp < 0xdc)
-	goto label_217b;
-      is_dead++;
-label_217b:
-      DrawPlayer();
-      player_x += move_x;
-      tmp = (uint8_t)(player_partial_x + move_x);
-      if ((tmp & 0x80) != 0)
-	player_tilex--;
-      if (((tmp - 8) & 0x80) == 0)
-	player_tilex++;
-      player_partial_x = tmp & 7;
-      player_y += move_y;
-      tmp = (uint8_t)(player_partial_y + move_y);
-      if ((tmp & 0x80) != 0)
-	player_tiley--;
-      if (((tmp - 8) & 0x80) == 0)
-	player_tiley++;
-      player_partial_y = tmp & 7;
-      tmp = player_face;
-      if (tmp == 0) {
-	  tmp2 = SPRITE_PLAYER_UP;
-	  tmp = player_partial_y >> 1;
-      } else {
-	  if ((tmp & 0x80) != 0)
-	    tmp2 = SPRITE_PLAYER_L;
-	  else
-	    tmp2 = SPRITE_PLAYER_R;
-	  tmp = player_partial_x >> 1;
-      }
-      if (tmp > 1)
-	tmp = (tmp & 1) << 1;
-      x = player_mode;
-      if (x != 1)
-	goto label_21e7;
-      x = move_y;
-      if (x != 0)
-	goto label_21ed;
-      tmp = 0;
-      goto label_21ed;
-label_21e7:
-      x = move_x;
-      if (x != 0)
-	goto label_21ed;
-      tmp = 0;
-label_21ed:
-      tmp += tmp2;
-      player_sprite = tmp;
-      DrawPlayer();
-      x = player_tilex;
-      y = player_tiley;
-      tmp = player_partial_y;
-      if (tmp >= 4)
-	y++;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 0x0c) == 0)
-	return;
-      if ((tmp & 0x08) == 0) {
-	  /* Got egg */
-	  eggs_left--;
-	  /* BEEP(6) */
-	  tmp >>= 4;
-	  player_data->egg[tmp]--;
-	  x = player_tilex;
-	  Do_InitTile(x, y, 3, 0, 1);
-	  tmp = (current_level >> 2) + 1;
-	  if (tmp >= 10)
-	    tmp = 10;
-	  AddScore(5, tmp);
-      } else {
-	  /* Got grain */
-	  /* BEEP(5) */
-	  tmp >>= 4;
-	  player_data->grain[tmp]--;
-	  x = player_tilex;
-	  RemoveGrain(x, y);
-	  AddScore(6, 5);
-	  bonus_hold = 14;
-      }
-      return;
-  } else {
+      if (player_y >= 0xdc)
+	is_dead++;
+      break;
+  case 0:
       /* Walk */
       if (buttons & 0x10) {
-label_20d0:
+start_jump:
 	  player_fall = 0;
 	  player_mode = 2;
 	  tmp = move_x;
 	  player_slide = tmp;
 	  if (tmp != 0)
 	    player_face = tmp;
-	  goto label_1f81;
-      } else if (move_y) {
-	  if (player_partial_x == 3) {
-	      if ((move_y & 0x80) == 0) {
-		  x = player_tilex;
-		  y = player_tiley + 2;
-		  tmp = Do_ReadMap(x, y);
-		  if ((tmp & 2) == 0)
-		    goto label_1ed8;
-		  goto label_1ecd;
-
-	      }
-	      x = player_tilex;
-	      y = player_tiley - 1;
-	      tmp = Do_ReadMap(x, y);
-	      if ((tmp & 2) == 0)
-		goto label_1ed8;
-label_1ecd:
-	      move_x = 0;
-	      player_mode = 1;
-	      goto label_1f19;
-	  }
-	  goto label_1ed8;
-      } else {
-label_1ed8:
-	  move_y = 0;
-	  tmp = (int8_t)(player_partial_x + move_x);
-	  x = player_tilex;
-	  if (tmp < 0)
-	    x--;
-	  else if (tmp >= 8)
-	    x++;
-	  y = player_tiley - 1;
-	  tmp = Do_ReadMap(x, y);
-	  tmp &= 1;
-	  if (tmp == 0) {
-	      int n;
-	      y = tmp;
-	      x = 0xff;
-	      n = (move_x + player_partial_x) & 7;
-	      if (n < 4) {
-		  x = 1;
-		  y++;
-	      }
-	      player_slide = x;
-	      player_fall = y;
-	      player_mode = 3;
-	  }
-	  if (MoveSideways()) {
-	      move_x = 0;
-	  }
-label_1f19:
-	  if (move_x) {
-	      player_face = move_x;
-	  }
-	  goto label_217b;
+	  goto do_jump;
       }
+      if (move_y) {
+	  if (player_partial_x == 3) {
+	      x = player_tilex;
+	      if ((move_y & 0x80) == 0)
+		  y = player_tiley + 2;
+	      else 
+		  y = player_tiley - 1;
+	      tmp = Do_ReadMap(x, y);
+	      if ((tmp & 2) != 0) {
+		  move_x = 0;
+		  player_mode = 1;
+		  break;
+	      }
+	  }
+	  move_y = 0;
+      }
+      tmp = (int8_t)(player_partial_x + move_x);
+      x = player_tilex;
+      if (tmp < 0)
+	x--;
+      else if (tmp >= 8)
+	x++;
+      y = player_tiley - 1;
+      tmp = Do_ReadMap(x, y);
+      tmp &= 1;
+      if (tmp == 0) {
+	  /* Walk off edge */
+	  int n;
+	  n = (move_x + player_partial_x) & 7;
+	  if (n < 4) {
+	      x = 1;
+	      y = 1;
+	  } else {
+	      y = 0;
+	      x = 0xff;
+	  }
+	  player_slide = x;
+	  player_fall = y;
+	  player_mode = 3;
+      }
+      if (MoveSideways()) {
+	  move_x = 0;
+      }
+      if (move_x) {
+	  player_face = move_x;
+      }
+      break;
+  default:
+      abort();
   }
+  AnimatePlayer();
 }
 
 static void MakeSound(void)
@@ -1251,70 +1213,6 @@ static void PlayTune(int addr)
   /* Play tune 0x2f7c */
 }
 
-static int EndOfFrame(void)
-{
-  int tmp;
-  if (is_dead != 0)
-    goto label_2a39;
-  if (player_y < 0x11)
-    goto label_2a39;
-  if (eggs_left == 0)
-    goto label_2a05;
-  if ((buttons & 0x80) != 0)
-    goto label_29ae;
-  /* Next frame */
-  return 0x29d8;
-label_2a05:
-  /* Level complete */
-  if (zero_bonus)
-    goto label_2a2b;
-label_2a09:
-  AddScore(6, 1);
-  ReduceBonus();
-  MaybeAddExtraLife();
-  tmp = timer_ticks[3];
-  if (tmp == 0 || tmp == 5) {
-      /* BEEP(?) */
-  }
-  if (!zero_bonus)
-    goto label_2a09;
-label_2a2b:
-  /* Advance to next level */
-  zero_bonus = 0;
-  current_level++;
-  SavePlayerState();
-  ResetPlayer();
-  RestorePlayerState();
-  return 0x29cf;
-label_2a39:
-  /* Died */
-  SavePlayerState();
-  PlayTune(0x2fa6);
-  tmp = --lives[current_player];
-  if (tmp != 0)
-    goto label_2a70;
-  /* Clear Screen */
-  /* "Game Over" */
-  /* Highscores.  */
-  if (--active_players == 0)
-    goto label_2a87;
-label_2a70:
-  /* Select next player. */
-  tmp = current_player;
-  do {
-      tmp = (tmp + 1) & 3;
-  } while (tmp >= num_players || lives[tmp] == 0);
-  current_player = tmp;
-  RestorePlayerState();
-  return 0x29b4;
-label_2a87:
-  /* No players left. */
-  /* Goto menu */
-  goto label_29ae;
-label_29ae:
-  return 0x29ae;
-}
-
 static void start_game(void)
 {
   int i, j;
@@ -1354,6 +1252,8 @@ static void ClearScreen(void)
 
 void run_game(void)
 {
+  int tmp;
+
 new_game:
   start_game();
 next_player:
@@ -1372,16 +1272,48 @@ next_frame:
   MaybeAddExtraLife();
   CollisionDetect();
   RenderFrame();
-  switch (EndOfFrame()) {
-  case 0x29d8:
-      goto next_frame;
-  case 0x29cf:
-      goto next_level;
-  case 0x29b4:
+
+  if ((buttons & 0x80) != 0)
+    goto new_game;
+  if (is_dead != 0 || player_y < 0x11) {
+      /* Died */
+      SavePlayerState();
+      PlayTune(0x2fa6);
+      if (--lives[current_player] == 0) {
+	  /* Clear Screen */
+	  /* "Game Over" */
+	  /* Highscores.  */
+	  if (--active_players == 0)
+	    goto new_game;
+      }
+      /* Select next player. */
+      tmp = current_player;
+      do {
+	  tmp = (tmp + 1) & 3;
+      } while (tmp >= num_players || lives[tmp] == 0);
+      current_player = tmp;
+      RestorePlayerState();
       goto next_player;
-  case 0x29ae: /* Menu */
-      goto new_game;
-  default:
-      abort();
   }
+  if (eggs_left == 0) {
+      /* Level complete */
+      while (!zero_bonus) {
+	  AddScore(6, 1);
+	  ReduceBonus();
+	  MaybeAddExtraLife();
+	  tmp = timer_ticks[3];
+	  if (tmp == 0 || tmp == 5) {
+	      /* BEEP(?) */
+	  }
+	  /* Render Screen? */
+      }
+      /* Advance to next level */
+      zero_bonus = 0;
+      current_level++;
+      SavePlayerState();
+      ResetPlayer();
+      RestorePlayerState();
+      goto next_level;
+  }
+  goto next_frame;
 }

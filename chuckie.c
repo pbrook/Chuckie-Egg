@@ -436,6 +436,20 @@ static void AddScore(int n, int val)
 	n--;
     }
 }
+/*        N    T  PI1  PI2  PI3  PN1  PN2  PN3   AA   AD   AS   AR  ALA  ALD */
+/* E1: 0x01 0x01 0x00 0x00 0x00 0x00 0x00 0x00 0x7e 0xce 0x00 0x00 0x64 0x00
+ * E2: 0x02 0x01 0x00 0x00 0x00 0x00 0x00 0x00 0x7e 0xfe 0x00 0xfb 0x7e 0x64
+ * E3: 0x03 0x01 0x00 0x00 0x00 0x00 0x00 0x00 0x32 0x00 0x00 0xe7 0x64 0x00
+ */
+static void beep(int tmp) /* 0x0c98 */
+{
+  /* channel = 13 (Flush), note = 1, pitch = tmp, duration = 0x0001 */
+}
+
+static void squidge(int tmp) /* 0x0ca8 */
+{
+  /* 0001 0003 0000 0004 */
+}
 
 static void AnimatePlayer(void)
 {
@@ -489,7 +503,7 @@ static void AnimatePlayer(void)
     if ((tmp & 0x08) == 0) {
 	/* Got egg */
 	eggs_left--;
-	/* BEEP(6) */
+	/* SQUIDGE(6) */
 	tmp >>= 4;
 	player_data->egg[tmp]--;
 	Do_InitTile(x, y, 3, 0, 1);
@@ -499,7 +513,7 @@ static void AnimatePlayer(void)
 	AddScore(5, tmp);
     } else {
 	/* Got grain */
-	/* BEEP(5) */
+	/* SQUIDGE(5) */
 	tmp >>= 4;
 	player_data->grain[tmp]--;
 	RemoveGrain(x, y);
@@ -1303,7 +1317,7 @@ next_frame:
 	  MaybeAddExtraLife();
 	  tmp = timer_ticks[3];
 	  if (tmp == 0 || tmp == 5) {
-	      /* BEEP(?) */
+	      /* sound(0xcb0) - 0010 0001 0004 0001 */
 	  }
 	  /* Render Screen? */
       }

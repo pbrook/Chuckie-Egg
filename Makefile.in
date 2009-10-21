@@ -52,7 +52,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_chuckie_OBJECTS = chuckie-chuckie.$(OBJEXT) \
 	chuckie-spritedata.$(OBJEXT) chuckie-leveldata.$(OBJEXT) \
-	chuckie-sdl.$(OBJEXT)
+	chuckie-sdl.$(OBJEXT) chuckie-audio-alsa.$(OBJEXT)
 chuckie_OBJECTS = $(am_chuckie_OBJECTS)
 chuckie_LDADD = $(LDADD)
 chuckie_LINK = $(CCLD) $(chuckie_CFLAGS) $(CFLAGS) $(chuckie_LDFLAGS) \
@@ -166,7 +166,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-chuckie_SOURCES = chuckie.c spritedata.c leveldata.c sdl.c
+chuckie_SOURCES = chuckie.c spritedata.c leveldata.c sdl.c audio-alsa.c
 chuckie_LDFLAGS = $(SDL_LIBS)
 chuckie_CFLAGS = $(SDL_CFLAGS)
 all: config.h
@@ -272,6 +272,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-audio-alsa.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-chuckie.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-leveldata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-sdl.Po@am__quote@
@@ -346,6 +347,20 @@ chuckie-sdl.obj: sdl.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl.c' object='chuckie-sdl.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-sdl.obj `if test -f 'sdl.c'; then $(CYGPATH_W) 'sdl.c'; else $(CYGPATH_W) '$(srcdir)/sdl.c'; fi`
+
+chuckie-audio-alsa.o: audio-alsa.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-audio-alsa.o -MD -MP -MF $(DEPDIR)/chuckie-audio-alsa.Tpo -c -o chuckie-audio-alsa.o `test -f 'audio-alsa.c' || echo '$(srcdir)/'`audio-alsa.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-audio-alsa.Tpo $(DEPDIR)/chuckie-audio-alsa.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-alsa.c' object='chuckie-audio-alsa.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-audio-alsa.o `test -f 'audio-alsa.c' || echo '$(srcdir)/'`audio-alsa.c
+
+chuckie-audio-alsa.obj: audio-alsa.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-audio-alsa.obj -MD -MP -MF $(DEPDIR)/chuckie-audio-alsa.Tpo -c -o chuckie-audio-alsa.obj `if test -f 'audio-alsa.c'; then $(CYGPATH_W) 'audio-alsa.c'; else $(CYGPATH_W) '$(srcdir)/audio-alsa.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-audio-alsa.Tpo $(DEPDIR)/chuckie-audio-alsa.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-alsa.c' object='chuckie-audio-alsa.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-audio-alsa.obj `if test -f 'audio-alsa.c'; then $(CYGPATH_W) 'audio-alsa.c'; else $(CYGPATH_W) '$(srcdir)/audio-alsa.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

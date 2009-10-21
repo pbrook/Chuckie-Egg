@@ -40,7 +40,8 @@ uint8_t lives[4];
 uint8_t level[4];
 uint8_t levelmap[0x200];
 uint8_t player_sprite;
-uint8_t player_mode; /*0 = Walking, 1 = Climbing, 2 = Jumping, 3 = Falling */
+/* 0 = Walking, 1 = Climbing, 2 = Jumping, 3 = Falling, 4 = Lift */
+uint8_t player_mode;
 uint8_t player_fall;
 uint8_t player_slide;
 uint8_t player_face;
@@ -444,6 +445,7 @@ static void AddScore(int n, int val)
 static void beep(int tmp) /* 0x0c98 */
 {
   /* channel = 13 (Flush), note = 1, pitch = tmp, duration = 0x0001 */
+  sound_start(tmp);
 }
 
 static void squidge(int tmp) /* 0x0ca8 */
@@ -504,6 +506,7 @@ static void AnimatePlayer(void)
 	/* Got egg */
 	eggs_left--;
 	/* SQUIDGE(6) */
+	squidge(6);
 	tmp >>= 4;
 	player_data->egg[tmp]--;
 	Do_InitTile(x, y, 3, 0, 1);
@@ -514,6 +517,7 @@ static void AnimatePlayer(void)
     } else {
 	/* Got grain */
 	/* SQUIDGE(5) */
+	squidge(5);
 	tmp >>= 4;
 	player_data->grain[tmp]--;
 	RemoveGrain(x, y);
@@ -840,7 +844,7 @@ static void MakeSound(void)
       tmp = (uint8_t)(0xbe - (player_fall * 2));
       goto label_0c8b;
   }
-  tmp = (uint8_t)(0x96 - (player_fall * 2));
+  tmp = (uint8_t)(0x96 + (player_fall * 2));
   goto label_0c8b;
 label_0c76:
   if (tmp == 3) {
@@ -852,6 +856,7 @@ label_0c76:
   tmp = 0x64;
 label_0c8b:
   /* BEEP(tmp) */
+  beep(tmp);
   while(0);
 }
 

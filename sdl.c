@@ -108,6 +108,8 @@ int main()
   sdlscreen = SDL_SetVideoMode(320, 256, 8, SDL_SWSURFACE);
   SDL_SetPalette(sdlscreen, SDL_LOGPAL | SDL_PHYSPAL, palette, 0, 16);
 
+  init_sound();
+
   SDL_AddTimer(30, do_timer, NULL);
 
   run_game();

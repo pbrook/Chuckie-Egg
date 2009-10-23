@@ -11,6 +11,6 @@ void RenderFrame(void);
 
 void run_game(void);
 
-void sound_start(int);
+void sound_start(int, int);
 
 #endif

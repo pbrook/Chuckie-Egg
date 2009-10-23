@@ -445,12 +445,13 @@ static void AddScore(int n, int val)
 static void beep(int tmp) /* 0x0c98 */
 {
   /* channel = 13 (Flush), note = 1, pitch = tmp, duration = 0x0001 */
-  sound_start(tmp);
+  sound_start(tmp, 1);
 }
 
 static void squidge(int tmp) /* 0x0ca8 */
 {
   /* 0001 0003 0000 0004 */
+  sound_start(tmp, 0);
 }
 
 static void AnimatePlayer(void)

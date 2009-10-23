@@ -14,11 +14,19 @@ static char dev_name[] = "default";
 static snd_pcm_t *playback_handle;
 static short next_buffer[BUFSIZE];
 
-static int tone_flip;
-static volatile int tone_vol;
-static int tone_cycles;
-static int tone_period;
-static int tone_len;
+static int beep_vol[] = {0x3fff, 0x1fff, 0};
+static int noise_vol[] =
+{
+  0x1fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff,
+  0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff,
+  0x3fff, 0x3fff, 0x3fff, 0x1fff, 0};
+
+static int tone_level[2];
+static int *tone_vol[2] = {noise_vol, beep_vol};
+static int tone_pos[2];
+static int tone_cycles[2];
+static int tone_period[2];
+static int tone_len[2];
 
 static const int period_lookup[256] = 
 {
@@ -57,46 +65,93 @@ static const int period_lookup[256] =
 };
 
 void
-sound_start(int note)
+sound_start(int note, int channel)
 {
-  if (note > 255)
-    note = 255;
-  else if (note < 0)
-    note = 0;
-  tone_cycles = tone_period = period_lookup[note];
-  tone_len = FREQ / 50;
-  tone_vol = 0x3fff;
+  int rate;
+  if (channel != 0)
+    {
+      if (note > 255)
+	note = 255;
+      else if (note < 0)
+	note = 0;
+      rate = period_lookup[note];
+    }
+  else
+    {
+      switch (note & 3)
+	{
+	case 0:
+	  rate = FREQ / 7000;
+	  break;
+	case 1:
+	  rate = FREQ / 3500;
+	  break;
+	case 2:
+	  rate = FREQ / 1750;
+	  break;
+	default:
+	  rate = 0;
+	  break;
+	}
+    }
+  tone_pos[channel] = 0;
+  tone_period[channel] = rate;
+}
+
+static int
+get_noise(void)
+{
+  static int seed = 0x4000;
+  int bit;
+
+  bit = seed & 1;
+  seed >>= 1;
+  bit ^= (seed & 1);
+  seed |= bit << 15;
+  return seed & 1;
 }
 
 static void
 mix_buffer (void)
 {
   int i;
+  int n;
   short val;
   short *p = next_buffer;
 
-  if (tone_vol == 0)
-    {
-      memset (p, 0, 2 * BUFSIZE);
-      return;
-    }
   for (i = 0; i < BUFSIZE; i++)
     {
-      val = tone_vol;
-      if (tone_flip)
-	val = -val;
-      *(p++) = val;
-      if (tone_cycles <= 0)
+      val = 0;
+      for (n = 0; n < 2; n++)
 	{
-	  tone_cycles = tone_period;
-	  tone_flip = !tone_flip;
-	  if (tone_len <= 0)
-	    tone_vol = 0;
-	  else if (tone_len < (FREQ / 100))
-	    tone_vol = 0x1fff;
+	  if (tone_period[n] == 0)
+	    continue;
+	  if (tone_level[n])
+	    val += tone_vol[n][tone_pos[n]];
+	  else
+	    val -= tone_vol[n][tone_pos[n]];
+
+	  if (tone_cycles[n] <= 0)
+	    {
+	      tone_cycles[n] = tone_period[n];
+	      if (n == 0)
+		tone_level[n] = get_noise();
+	      else
+		tone_level[n] = !tone_level[n];
+	      if (tone_len[n] >= FREQ / 100)
+		{
+		  tone_len[n] -= FREQ / 100;
+		  tone_pos[n]++;
+		}
+	      if (tone_vol[n][tone_pos[n]] == 0)
+		tone_period[n] = 0;
+	      tone_cycles[n] = tone_period[n];
+	    }
+	  else
+	    tone_cycles[n]--;
+	  tone_len[n]++;
 	}
-      tone_cycles--;
-      tone_len--;
+      *(p++) = val;
     }
 }
 

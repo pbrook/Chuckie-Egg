@@ -2,6 +2,8 @@ AC_INIT(chuckie, 0.1, paul@nowt.org)
 
 AM_INIT_AUTOMAKE
 
+AM_MAINTAINER_MODE
+
 AC_CONFIG_HEADERS(config.h)
 
 AC_PROG_CC()

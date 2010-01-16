@@ -68,6 +68,10 @@ void
 sound_start(int note, int channel)
 {
   int rate;
+
+  if (!playback_handle)
+    return;
+
   if (channel != 0)
     {
       if (note > 255)
@@ -209,7 +213,7 @@ pcm_callback (snd_async_handler_t *handler)
     }
 }
 
-static void
+static int
 init_pcm(void)
 {
     snd_pcm_hw_params_t *hw_params;
@@ -219,7 +223,7 @@ init_pcm(void)
             
     if ((rc = snd_pcm_open (&playback_handle, DEV_NAME, SND_PCM_STREAM_PLAYBACK, SND_PCM_ASYNC)) < 0) {
         fprintf (stderr, "cannot open audio device %s (%d)\n", DEV_NAME, rc);
-        exit (1);
+	return 1;
     }
     snd_pcm_hw_params_alloca(&hw_params);
     snd_pcm_hw_params_any(playback_handle, hw_params);
@@ -239,18 +243,23 @@ init_pcm(void)
     snd_pcm_sw_params(playback_handle, sw_params);
 
     snd_pcm_prepare(playback_handle);
+    return 0;
 }
 
 static void *
 sound_thread (void *arg)
 {
-  init_pcm ();
+  if (init_pcm ())
+    return NULL;
+
   while (1)
     {
       int err;
 
       err = snd_pcm_wait (playback_handle, 10);
-      if (err < 0) {
+      if (err == -EPIPE) {
+	snd_pcm_prepare(playback_handle);
+      } else if (err < 0 && err != -EPIPE) {
 	fprintf(stderr, "Sound Error %d\n", err);
       }
       pcm_callback(NULL);

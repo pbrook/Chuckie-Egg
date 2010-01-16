@@ -2,6 +2,8 @@
 
 #include "SDL.h"
 
+static int scale = 2;
+
 SDL_Surface *sdlscreen;
 
 SDLKey keys[8] = {
@@ -61,6 +63,8 @@ void RenderFrame(void)
   uint8_t color;
   int x;
   int y;
+  int i;
+  int j;
 
   if (SDL_LockSurface(sdlscreen) > 0)
     die("SDL_LockScreen: %s\n", SDL_GetError());
@@ -68,12 +72,18 @@ void RenderFrame(void)
   dest = sdlscreen->pixels;
   src = pixels;
   for (y = 0; y < 256; y++) {
-      for (x = 0; x < 160; x++) {
-	  color = *(src++);
-	  *(dest++) = color;
-	  *(dest++) = color;
+      for (j = 0; j < scale; j++) {
+	  for (x = 0; x < 160; x++) {
+	      color = *(src++);
+	      for (i = 0; i < scale; i++) {
+		  *(dest++) = color;
+		  *(dest++) = color;
+	      }
+	      dest += sdlscreen->pitch - 320 * scale;
+	  }
+	  src -= 160;
       }
-      dest += sdlscreen->pitch - 320;
+      src += 160;
   }
   SDL_UnlockSurface(sdlscreen);
   SDL_UpdateRect(sdlscreen, 0, 0, 0, 0);
@@ -92,8 +102,25 @@ Uint32 do_timer(Uint32 interval, void *param)
   return interval;
 }
 
-int main()
+static void parse_args(int argc, const char *argv[])
 {
+  const char *p;
+  int i;
+
+  for (i = 1; i < argc; i++)
+    {
+      p = argv[i];
+      if (*p == '-')
+	p++;
+      if (*p >= '1' && *p <= '9')
+	scale = *p - '0';
+    }
+}
+
+int main(int argc, const char *argv[])
+{
+  parse_args (argc, argv);
+
   SDL_Color palette[16] = {
     {0, 0, 0}, YELLOW, PURPLE, GREEN,
     YELLOW, YELLOW, YELLOW, YELLOW, 
@@ -105,7 +132,7 @@ int main()
       die("SDL_Init: %s\n", SDL_GetError());
   }
 
-  sdlscreen = SDL_SetVideoMode(320, 256, 8, SDL_SWSURFACE);
+  sdlscreen = SDL_SetVideoMode(scale * 320, scale * 256, 8, SDL_SWSURFACE);
   SDL_SetPalette(sdlscreen, SDL_LOGPAL | SDL_PHYSPAL, palette, 0, 16);
 
   init_sound();

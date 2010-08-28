@@ -2,7 +2,8 @@
 
 #include "SDL.h"
 
-static int scale = 2;
+static int scale = -1;
+static int fullscreen = 0;
 
 SDL_Surface *sdlscreen;
 
@@ -119,22 +120,29 @@ Uint32 do_timer(Uint32 interval, void *param)
 
 static void parse_args(int argc, const char *argv[])
 {
-  const char *p;
-  int i;
+    const char *p;
+    int i;
 
-  for (i = 1; i < argc; i++)
-    {
-      p = argv[i];
-      if (*p == '-')
-	p++;
-      if (*p >= '1' && *p <= '9')
-	scale = *p - '0';
+    for (i = 1; i < argc; i++) {
+	p = argv[i];
+	if (*p == '-')
+	  p++;
+	if (*p >= '1' && *p <= '9')
+	  scale = *p - '0';
+	else if (*p == 'f')
+	  fullscreen = 1;
+	else if (*p == 'h') {
+	    printf("Usage: chuckie [-<1-9>] [-f]\n");
+	    exit(0);
+	}
     }
 }
 
 int main(int argc, const char *argv[])
 {
   parse_args (argc, argv);
+  int flags;
+  const SDL_VideoInfo *info;
 
   SDL_Color palette[16] = {
     {0, 0, 0}, YELLOW, PURPLE, GREEN,
@@ -147,8 +155,27 @@ int main(int argc, const char *argv[])
       die("SDL_Init: %s\n", SDL_GetError());
   }
 
-  sdlscreen = SDL_SetVideoMode(scale * 320, scale * 256, 8, SDL_SWSURFACE);
+  info = SDL_GetVideoInfo();
+  if (scale == -1) { 
+      scale = info->current_h / 256;
+      if (scale > 2)
+	scale = 2;
+  }
+
+  flags = SDL_SWSURFACE;
+  if (fullscreen)
+    flags |= SDL_FULLSCREEN;
+  printf("%d\n", flags);
+
+  sdlscreen = SDL_SetVideoMode(scale * 320, scale * 256, 8, flags);
+  if (!sdlscreen) {
+      SDL_Quit();
+      fprintf(stderr, "SDL_SetVideoMode failed\n");
+      return 0;
+  }
   SDL_SetPalette(sdlscreen, SDL_LOGPAL | SDL_PHYSPAL, palette, 0, 16);
+
+  SDL_ShowCursor(SDL_DISABLE);
 
   init_sound();
 

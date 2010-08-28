@@ -16,5 +16,6 @@ void run_game(void);
 extern short next_buffer[BUFSIZE];
 void mix_buffer(void);
 void sound_start(int, int);
+void init_sound(void);
 
 #endif

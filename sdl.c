@@ -6,12 +6,13 @@ static int scale = 2;
 
 SDL_Surface *sdlscreen;
 
-SDLKey keys[8] = {
-    SDLK_PERIOD,
-    SDLK_COMMA,
-    SDLK_z,
-    SDLK_a,
-    SDLK_SPACE
+SDLKey keys[5][6] = {
+    /* right */ {SDLK_PERIOD, SDLK_RIGHT, SDLK_ESCAPE},
+    /* left */  {SDLK_COMMA, SDLK_LEFT, SDLK_ESCAPE},
+    /* down */  {SDLK_z, SDLK_DOWN, SDLK_ESCAPE},
+    /* up */    {SDLK_a, SDLK_UP, SDLK_ESCAPE},
+    /* jump */  {SDLK_SPACE, SDLK_HOME, SDLK_END, SDLK_PAGEUP,
+		 SDLK_PAGEDOWN, SDLK_ESCAPE}
 };
 
 void die(const char *msg, ...)
@@ -30,6 +31,7 @@ void PollKeys(void)
   SDL_Event event;
   int i;
   int sym;
+  SDLKey *keylist;
 
   while (1) {
       if (SDL_WaitEvent(&event) == 0) {
@@ -50,12 +52,16 @@ void PollKeys(void)
 	      SDL_Quit();
 	      exit(0);
 	  default:
-	      for (i = 0; i < 8; i++) {
-		  if (event.key.keysym.sym == keys[i]) {
-		      if (event.key.state == SDL_PRESSED)
-			  buttons |= 1 << i;
-		      else
-			  buttons &= ~(1 << i);
+	      for (i = 0; i < 5; i++) {
+		  keylist = &keys[i][0];
+		  while (*keylist != SDLK_ESCAPE) {
+		      if (event.key.keysym.sym == *keylist) {
+			  if (event.key.state == SDL_PRESSED)
+			      buttons |= 1 << i;
+			  else
+			      buttons &= ~(1 << i);
+		      }
+		      keylist++;
 		  }
 	      }
 	      break;
@@ -149,5 +155,7 @@ int main(int argc, const char *argv[])
   SDL_AddTimer(30, do_timer, NULL);
 
   run_game();
+
+  return 0;
 }
 

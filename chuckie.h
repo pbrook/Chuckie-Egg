@@ -11,6 +11,10 @@ void RenderFrame(void);
 
 void run_game(void);
 
+#define BUFSIZE 512
+#define FREQ 44100
+extern short next_buffer[BUFSIZE];
+void mix_buffer(void);
 void sound_start(int, int);
 
 #endif

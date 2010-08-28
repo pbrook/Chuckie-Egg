@@ -51,7 +51,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_chuckie_OBJECTS = chuckie.$(OBJEXT) spritedata.$(OBJEXT) \
-	leveldata.$(OBJEXT) sdl.$(OBJEXT) audio-alsa.$(OBJEXT)
+	leveldata.$(OBJEXT) sdl.$(OBJEXT) audio.$(OBJEXT) \
+	audio-sdl.$(OBJEXT)
 chuckie_OBJECTS = $(am_chuckie_OBJECTS)
 am__DEPENDENCIES_1 =
 chuckie_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -165,9 +166,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-chuckie_SOURCES = chuckie.c spritedata.c leveldata.c sdl.c audio-alsa.c
-chuckie_LDADD = $(SDL_LIBS) -lasound
-AM_CFLAGS = $(SDL_CFLAGS)
+chuckie_SOURCES = chuckie.c spritedata.c leveldata.c sdl.c audio.c audio-sdl.c
+chuckie_LDADD = $(SDL_LIBS)
+AM_CFLAGS = $(SDL_CFLAGS) -Wall
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -271,7 +272,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio-alsa.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio-sdl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/leveldata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sdl.Po@am__quote@

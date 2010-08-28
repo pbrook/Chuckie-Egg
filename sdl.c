@@ -29,6 +29,7 @@ void PollKeys(void)
 {
   SDL_Event event;
   int i;
+  int sym;
 
   while (1) {
       if (SDL_WaitEvent(&event) == 0) {
@@ -43,13 +44,21 @@ void PollKeys(void)
 	  return;
       case SDL_KEYDOWN:
       case SDL_KEYUP:
-	  for (i = 0; i < 8; i++) {
-	      if (event.key.keysym.sym == keys[i]) {
-		  if (event.key.state == SDL_PRESSED)
-		      buttons |= 1 << i;
-		  else
-		      buttons &= ~(1 << i);
+	  sym = event.key.keysym.sym;
+	  switch (sym) {
+	  case SDLK_ESCAPE:
+	      SDL_Quit();
+	      exit(0);
+	  default:
+	      for (i = 0; i < 8; i++) {
+		  if (event.key.keysym.sym == keys[i]) {
+		      if (event.key.state == SDL_PRESSED)
+			  buttons |= 1 << i;
+		      else
+			  buttons &= ~(1 << i);
+		  }
 	      }
+	      break;
 	  }
 	  break;
       }

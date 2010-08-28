@@ -51,6 +51,7 @@ void PollKeys(void)
 	  sym = event.key.keysym.sym;
 	  switch (sym) {
 	  case SDLK_ESCAPE:
+	  case SDLK_q:
 	      SDL_Quit();
 	      exit(0);
 	  default:

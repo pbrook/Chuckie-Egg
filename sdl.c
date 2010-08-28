@@ -2,8 +2,9 @@
 
 #include "SDL.h"
 
-static int scale = -1;
+static int scale = 2;
 static int fullscreen = 0;
+static int aspect_hack = 1;
 
 SDL_Surface *sdlscreen;
 
@@ -88,6 +89,18 @@ void RenderFrame(void)
   dest = sdlscreen->pixels;
   src = pixels;
   for (y = 0; y < 256; y++) {
+      if (aspect_hack
+	  && (y < 7
+	      || y == 19
+	      || y == 20
+	      || y == 21
+	      || y == 32
+	      || y == 33
+	      || y >= 252
+	      )) {
+	  src += 160;
+	  continue;
+      }
       for (j = 0; j < scale; j++) {
 	  for (x = 0; x < 160; x++) {
 	      color = *(src++);
@@ -131,8 +144,10 @@ static void parse_args(int argc, const char *argv[])
 	  scale = *p - '0';
 	else if (*p == 'f')
 	  fullscreen = 1;
+	else if (*p == 'a')
+	  aspect_hack = 0;
 	else if (*p == 'h') {
-	    printf("Usage: chuckie [-<1-9>] [-f]\n");
+	    printf("Usage: chuckie -123456789fa\n");
 	    exit(0);
 	}
     }
@@ -142,6 +157,7 @@ int main(int argc, const char *argv[])
 {
   parse_args (argc, argv);
   int flags;
+  int height;
   const SDL_VideoInfo *info;
 
   SDL_Color palette[16] = {
@@ -155,19 +171,12 @@ int main(int argc, const char *argv[])
       die("SDL_Init: %s\n", SDL_GetError());
   }
 
-  info = SDL_GetVideoInfo();
-  if (scale == -1) { 
-      scale = info->current_h / 256;
-      if (scale > 2)
-	scale = 2;
-  }
-
   flags = SDL_SWSURFACE;
   if (fullscreen)
     flags |= SDL_FULLSCREEN;
-  printf("%d\n", flags);
 
-  sdlscreen = SDL_SetVideoMode(scale * 320, scale * 256, 8, flags);
+  height = aspect_hack ? 240 : 256;
+  sdlscreen = SDL_SetVideoMode(scale * 320, scale * height, 8, flags);
   if (!sdlscreen) {
       SDL_Quit();
       fprintf(stderr, "SDL_SetVideoMode failed\n");

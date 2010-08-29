@@ -1,3 +1,7 @@
+/* Chuckie Egg.  Based on the original by A & F Software
+   Written by Paul Brook
+   Released under teh GNU GPL v3.  */
+
 #include "config.h"
 
 #include <stdarg.h>

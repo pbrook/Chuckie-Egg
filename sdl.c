@@ -1,3 +1,5 @@
+/* Copyright (C) 2010 Paul Brook
+   This code is licenced under the GNU GPL v3 */
 #include "chuckie.h"
 
 #include "SDL.h"

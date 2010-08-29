@@ -70,7 +70,7 @@ sound_start(int note, int channel)
 	note = 255;
       else if (note < 0)
 	note = 0;
-      rate = period_lookup[note];
+      rate = (int)(period_lookup[note] * 1.2); /* ??? */
     }
   else
     {

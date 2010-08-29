@@ -29,23 +29,22 @@ static void fill_audio(void *arg, Uint8 *stream, int len)
 void init_sound(void)
 {
   int err;
-  SDL_AudioSpec desired, obtained;
+  SDL_AudioSpec desired;
 
   err = SDL_InitSubSystem(SDL_INIT_AUDIO);
   if (err)
     return;
   desired.callback = fill_audio;
   desired.userdata = NULL;
-  desired.freq = FREQ / 2; /* ??? */
+  desired.freq = FREQ;
   desired.format = AUDIO_S16SYS;
   desired.channels = 2;
-  desired.samples = 4096;
+  desired.samples = 2048;
 
-  if (SDL_OpenAudio(&desired, &obtained))
+  if (SDL_OpenAudio(&desired, NULL))
     {
       fprintf(stderr, "Audio init failed\n");
       return;
     }
-  printf("Got %d\n", obtained.freq);
   SDL_PauseAudio(0);
 }

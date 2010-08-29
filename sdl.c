@@ -85,12 +85,14 @@ void RenderFrame(void)
   int y;
   int i;
   int j;
+  int dest_pitch;
 
   if (SDL_LockSurface(sdlscreen) > 0)
     die("SDL_LockScreen: %s\n", SDL_GetError());
 
   dest = sdlscreen->pixels;
   src = pixels;
+  dest_pitch = sdlscreen->pitch - 320 * scale;
   for (y = 0; y < 256; y++) {
       if (aspect_hack
 	  && (y < 7
@@ -111,7 +113,7 @@ void RenderFrame(void)
 		  *(dest++) = color;
 		  *(dest++) = color;
 	      }
-	      dest += sdlscreen->pitch - 320 * scale;
+	      dest += dest_pitch;
 	  }
 	  src -= 160;
       }

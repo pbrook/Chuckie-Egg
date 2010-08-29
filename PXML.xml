@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PXML xmlns="http://openpandora.org/namespaces/PXML" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PXML_schema.xsd">
+  <application id="chuckie-egg">
+    <title lang="en_US">Chuckie Egg</title>
+    <exec command="chuckie" arguments="-f"/>
+    <icon src="./chuckie.png">
+    <description lang="en_US">An authentic clone of the 8-bit platform game Chuckie Egg</description>
+    <author name="Paul Brook" website="http://github.com/pbrook/Chuckie-Egg/"/><!--Optional email and website, name required-->
+    <version major="1" minor="0" release="0" build="0"/>
+    <osversion major="1" minor="0" release="0" build="0"/>
+    <categories>
+      <category name="Game">
+        <subcategory name="ArcadeGame"/>
+      </category>
+    </categories>
+ 
+  </application>
+</PXML>
+

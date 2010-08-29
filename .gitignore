@@ -1,6 +1,7 @@
 .deps
 Makefile
 chuckie
+chuckie-egg.pnd
 *.o
 config.h
 config.log

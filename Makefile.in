@@ -615,6 +615,14 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-am uninstall-binPROGRAMS
 
 
+pnd: chuckie-egg.pnd
+
+chuckie-egg.pnd: chuckie PXML.xml chuckie.png
+	mkdir -p pnd-tmp
+	cp chuckie PXML.xml chuckie.png COPYING pnd-tmp
+	pnd_make.sh -c -p chuckie-egg.pnd -d pnd-tmp -x PXML.xml -i chuckie.png
+	rm -rf pnd-tmp
+
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

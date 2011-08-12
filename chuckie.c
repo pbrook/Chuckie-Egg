@@ -43,7 +43,7 @@ uint8_t timer_ticks[3];
 uint8_t lives[4];
 uint8_t level[4];
 uint8_t levelmap[0x200];
-uint8_t player_sprite;
+sprite_t *player_sprite;
 /* 0 = Walking, 1 = Climbing, 2 = Jumping, 3 = Falling, 4 = Lift */
 uint8_t player_mode;
 uint8_t player_fall;
@@ -83,7 +83,7 @@ struct {
 
 uint8_t pixels[160 * 256];
 
-static void Do_RenderSprite(int x, int y, int sprite, int color)
+static void Do_RenderSprite(int x, int y, sprite_t *sprite, int color)
 {
     const uint8_t *src;
     uint8_t srcbits;
@@ -94,9 +94,9 @@ static void Do_RenderSprite(int x, int y, int sprite, int color)
     uint8_t *dest;
 
     y = y ^ 0xff;
-    sx = sprites[sprite].x;
-    sy = sprites[sprite].y;
-    src = sprites[sprite].data;
+    sx = sprite->x;
+    sy = sprite->y;
+    src = sprite->data;
     dest = &pixels[x + y * 160];
 
     bits = 0;
@@ -120,7 +120,7 @@ static void Do_RenderSprite(int x, int y, int sprite, int color)
 
 static void Do_RenderDigit(int x, int y, int n)
 {
-    Do_RenderSprite(x, y, n + 0x1f, 2);
+    Do_RenderSprite(x, y, &sprite_digit[n], 2);
 }
 
 static void DrawLives(int player)
@@ -136,7 +136,7 @@ static void DrawLives(int player)
   if (i > 8)
     i = 8;
   while (i--) {
-    Do_RenderSprite(x, 0xee, SPRITE_HAT, 4);
+    Do_RenderSprite(x, 0xee, &SPRITE_HAT, 4);
     x += 4;
   }
 }
@@ -146,15 +146,15 @@ static void DrawHUD(void)
 {
   int tmp;
 
-  Do_RenderSprite(0, 0xf8, SPRITE_SCORE, 2);
+  Do_RenderSprite(0, 0xf8, &SPRITE_SCORE, 2);
   tmp = current_player * 0x22 + 0x1b;
-  Do_RenderSprite(tmp, 0xf8, SPRITE_BLANK, 2);
+  Do_RenderSprite(tmp, 0xf8, &SPRITE_BLANK, 2);
   for (tmp = 0; tmp < num_players; tmp++) {
       DrawLives(tmp);
   }
-  Do_RenderSprite(0, 0xe8, SPRITE_PLAYER, 2);
-  Do_RenderSprite(0x1b, 0xe7, current_player + SPRITE_1, 2);
-  Do_RenderSprite(0x24, 0xe8, SPRITE_LEVEL, 2);
+  Do_RenderSprite(0, 0xe8, &SPRITE_PLAYER, 2);
+  Do_RenderSprite(0x1b, 0xe7, &sprite_digit[current_player + 1], 2);
+  Do_RenderSprite(0x24, 0xe8, &SPRITE_LEVEL, 2);
 
   tmp = current_level + 1;
   Do_RenderDigit(0x45, 0xe7, tmp % 10);
@@ -163,13 +163,13 @@ static void DrawHUD(void)
   if (tmp > 10)
     Do_RenderDigit(0x3b, 0xe7, tmp / 10);
 
-  Do_RenderSprite(0x4e, 0xe8, SPRITE_BONUS, 2);
+  Do_RenderSprite(0x4e, 0xe8, &SPRITE_BONUS, 2);
 
   Do_RenderDigit(0x66, 0xe7, bonus[0]);
   Do_RenderDigit(0x6b, 0xe7, bonus[1]);
   Do_RenderDigit(0x70, 0xe7, bonus[2]);
   Do_RenderDigit(0x75, 0xe7, 0);
-  Do_RenderSprite(0x7e, 0xe8, SPRITE_TIME, 2);
+  Do_RenderSprite(0x7e, 0xe8, &SPRITE_TIME, 2);
 
   tmp = current_level >> 4;
   if (tmp > 8) tmp = 8;
@@ -192,7 +192,7 @@ static int Do_ReadMap(uint8_t x, uint8_t y)
   return levelmap[x + y * 20];
 }
 
-static void Do_InitTile(int x, int y, int sprite, int n, int color)
+static void Do_InitTile(int x, int y, sprite_t *sprite, int n, int color)
 {
     levelmap[y * 20 + x] = n;
     Do_RenderSprite(x << 3, (y << 3) | 7, sprite, color);
@@ -225,7 +225,7 @@ static void LoadLevel(void)
 	x = *(p++);
 	i = *(p++);
 	while (x <= i) {
-	    Do_InitTile(x, y, 1, 1, 3);
+	    Do_InitTile(x, y, &SPRITE_WALL, 1, 3);
 	    x++;
 	}
     }
@@ -237,8 +237,8 @@ static void LoadLevel(void)
 	while (y <= i) {
 	    tmp = levelmap[x + y * 20];
 	    if (tmp)
-		Do_RenderSprite(x << 3, (y << 3) | 7, SPRITE_WALL, 3);
-	    Do_InitTile(x, y, SPRITE_LADDER, tmp | 2, 2);
+		Do_RenderSprite(x << 3, (y << 3) | 7, &SPRITE_WALL, 3);
+	    Do_InitTile(x, y, &SPRITE_LADDER, tmp | 2, 2);
 	    y++;
 	}
     }
@@ -252,7 +252,7 @@ static void LoadLevel(void)
 	x = *(p++);
 	y = *(p++);
 	if (player_data->egg[i] == 0) {
-	    Do_InitTile(x, y, SPRITE_EGG, (i << 4) | 4, 1);
+	    Do_InitTile(x, y, &SPRITE_EGG, (i << 4) | 4, 1);
 	    eggs_left++;
 	}
     }
@@ -261,12 +261,12 @@ static void LoadLevel(void)
 	x = *(p++);
 	y = *(p++);
 	if (player_data->grain[i] == 0) {
-	    Do_InitTile(x, y, 4, (i << 4) | 8, 2);
+	    Do_InitTile(x, y, &SPRITE_GRAIN, (i << 4) | 8, 2);
 	}
     }
 
-    Do_RenderSprite(0, 0xdc, have_big_duck ? SPRITE_CAGE_OPEN
-					   : SPRITE_CAGE_CLOSED, 4);
+    Do_RenderSprite(0, 0xdc, have_big_duck ? &SPRITE_CAGE_OPEN
+					   : &SPRITE_CAGE_CLOSED, 4);
 
     for (i = 0; i < 5 ; i++) {
 	duck[i].tile_x = *(p++);
@@ -278,20 +278,18 @@ static void LoadLevel(void)
 static void DrawBigDuck(void)
 {
   Do_RenderSprite(big_duck_x, big_duck_y,
-		  big_duck_sprite + SPRITE_BIGDUCK_R1, 4);
+		  sprite_big_duck[big_duck_sprite], 4);
 }
 
 /* DrawDuck */
 static void DrawDuck(int n)
 {
-  int sprite;
   int x;
 
-  sprite = duck[n].sprite + 0x15;
   x = duck[n].x;
-  if (sprite >= 0x1d)
+  if (duck[n].sprite >= 8)
     x -= 8;
-  Do_RenderSprite(x, duck[n].y, sprite, 8);
+  Do_RenderSprite(x, duck[n].y, sprite_duck[duck[n].sprite], 8);
 }
 
 /* DrawBigBird? */
@@ -307,7 +305,7 @@ static void DrawLastLife(void)
   if (tmp >= 9)
       return;
   tmp = (tmp << 2) + (current_player * 0x22) + 0xd + 0xa;
-  Do_RenderSprite(tmp, 0xee, SPRITE_HAT, 4);
+  Do_RenderSprite(tmp, 0xee, &SPRITE_HAT, 4);
 }
 
 static void StartLevel(void)
@@ -317,8 +315,8 @@ static void StartLevel(void)
       lift_y1 = 8;
       lift_y2 = 0x5a;
       current_lift = 0;
-      Do_RenderSprite(lift_x, lift_y1, 5, 1);
-      Do_RenderSprite(lift_x, lift_y2, 5, 1);
+      Do_RenderSprite(lift_x, lift_y1, &SPRITE_LIFT, 1);
+      Do_RenderSprite(lift_x, lift_y2, &SPRITE_LIFT, 1);
   }
   big_duck_x = 4;
   big_duck_y = 0xcc;
@@ -342,7 +340,7 @@ static void StartLevel(void)
   /* Delay(3) */
   player_x = 0x3c;
   player_y = 0x20;
-  player_sprite = 6;
+  player_sprite = &SPRITE_PLAYER_R;
   DrawPlayer();
   player_tilex = 7;
   player_tiley = 2;
@@ -408,7 +406,7 @@ static int MoveSideways(void)
 
 static void RemoveGrain(int x, int y)
 {
-  Do_InitTile(x, y, 4, 0, 2);
+  Do_InitTile(x, y, &SPRITE_GRAIN, 0, 2);
 }
 
 static void ScoreChange(int n, int oldval, int newval)
@@ -461,6 +459,7 @@ static void AnimatePlayer(void)
 {
     int tmp;
     int x, y;
+    sprite_t *const *ps;
 
     DrawPlayer();
     player_x += move_x;
@@ -478,18 +477,15 @@ static void AnimatePlayer(void)
       player_tiley++;
     player_partial_y = tmp & 7;
     if (player_face == 0) {
-	player_sprite = SPRITE_PLAYER_UP;
+	ps = sprite_player_up;
 	tmp = player_partial_y >> 1;
     } else {
 	if ((player_face & 0x80) != 0)
-	  player_sprite = SPRITE_PLAYER_L;
+	  ps = sprite_player_l;
 	else
-	  player_sprite = SPRITE_PLAYER_R;
+	  ps = sprite_player_r;
 	tmp = player_partial_x >> 1;
     }
-    if (tmp > 1)
-      tmp = (tmp & 1) << 1;
-
     if (player_mode != 1) {
 	if (move_x == 0)
 	  tmp = 0;
@@ -497,7 +493,7 @@ static void AnimatePlayer(void)
 	if (move_y == 0)
 	  tmp = 0;
     }
-    player_sprite += tmp;
+    player_sprite = ps[tmp];
     DrawPlayer();
     x = player_tilex;
     y = player_tiley;
@@ -513,7 +509,7 @@ static void AnimatePlayer(void)
 	squidge(6);
 	tmp >>= 4;
 	player_data->egg[tmp]--;
-	Do_InitTile(x, y, 3, 0, 1);
+	Do_InitTile(x, y, &SPRITE_EGG, 0, 1);
 	tmp = (current_level >> 2) + 1;
 	if (tmp >= 10)
 	  tmp = 10;
@@ -875,11 +871,11 @@ static void MoveLift(void)
     y = lift_y1;
   else
     y = lift_y2;
-  Do_RenderSprite(lift_x, y, 5, 1);
+  Do_RenderSprite(lift_x, y, &SPRITE_LIFT, 1);
   y += 2;
   if (y == 0xe0)
     y = 6;
-  Do_RenderSprite(lift_x, y, 5, 1);
+  Do_RenderSprite(lift_x, y, &SPRITE_LIFT, 1);
   if (current_lift == 0) {
       lift_y1 = y;
   } else {

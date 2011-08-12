@@ -5,6 +5,7 @@
 
 extern uint8_t pixels[160 * 256];
 extern uint8_t buttons;
+extern int cheat;
 
 void PollKeys(void);
 void RenderFrame(void);

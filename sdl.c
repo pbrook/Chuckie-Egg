@@ -56,6 +56,10 @@ void PollKeys(void)
 	  case SDLK_q:
 	      SDL_Quit();
 	      exit(0);
+	  case SDLK_l:
+	      if (event.type == SDL_KEYUP)
+		cheat = 1;
+	      break;
 	  default:
 	      for (i = 0; i < 5; i++) {
 		  keylist = &keys[i][0];

@@ -14,6 +14,7 @@
 
 #define NUM_PLAYERS 1
 
+int cheat;
 int is_dead;
 int zero_bonus;
 int extra_life;
@@ -1312,7 +1313,7 @@ next_frame:
       RestorePlayerState();
       goto next_player;
   }
-  if (eggs_left == 0) {
+  if (eggs_left == 0 || cheat) {
       /* Level complete */
       while (!zero_bonus) {
 	  AddScore(6, 1);
@@ -1325,6 +1326,7 @@ next_frame:
 	  /* Render Screen? */
       }
       /* Advance to next level */
+      cheat = 0;
       zero_bonus = 0;
       current_level++;
       SavePlayerState();

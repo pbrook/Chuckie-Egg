@@ -200,7 +200,6 @@ static void Do_InitTile(int x, int y, int sprite, int n, int color)
 
 static void LoadLevel(void)
 {
-    int addr;
     int i;
     int tmp;
     int x;
@@ -1179,8 +1178,7 @@ static void MaybeAddExtraLife(void)
 static void CollisionDetect(void)
 {
     int n;
-    int x;
-    int tmp;
+
     /* Little ducks */
     for (n = 0; n < num_ducks; n++) {
 	if ((uint8_t)((duck[n].x - player_x) + 5) < 0x0b
@@ -1207,10 +1205,9 @@ static void SavePlayerState(void)
 
 static void ResetPlayer(void)
 {
-  int a, b;
+  int a;
   int i;
   a = current_level + 1;
-  b = current_player << 6;
   if (a >= 10)
     a = 9;
   player_data->bonus[0] = a;

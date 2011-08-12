@@ -163,7 +163,6 @@ int main(int argc, const char *argv[])
   parse_args (argc, argv);
   int flags;
   int height;
-  const SDL_VideoInfo *info;
 
   SDL_Color palette[16] = {
     {0, 0, 0}, YELLOW, PURPLE, GREEN,

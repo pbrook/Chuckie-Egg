@@ -915,17 +915,16 @@ static void ReduceBonus(void)
   int flag;
 
   n = 2;
-label_26e0:
-  DrawBonus(n);
-  bonus[n]--;
-  flag = ((bonus[n] & 0x80) != 0);
-  if (flag) {
-      bonus[n] = 9;
-  }
-  DrawBonus(n);
-  n--;
-  if (flag)
-    goto label_26e0;
+  do {
+      DrawBonus(n);
+      bonus[n]--;
+      flag = ((bonus[n] & 0x80) != 0);
+      if (flag) {
+	  bonus[n] = 9;
+      }
+      DrawBonus(n);
+      n--;
+  } while (flag);
   if (bonus[0] + bonus[1] + bonus[2] == 0)
     zero_bonus = 1;
 }
@@ -940,58 +939,73 @@ static void MoveDucks(void)
   int tmp2;
   int newdir;
 
-  /* Big Duck.  */
   duck_timer++;
   if (duck_timer == 8) {
+      /* Big Duck.  */
       duck_timer = 0;
-      goto label_2420;
+      duck_look = big_duck_sprite & 2;
+      if (have_big_duck) {
+	  tmp = (uint8_t)(big_duck_x + 4);
+	  if (tmp < player_x) {
+	      if (big_duck_dx < 5)
+		big_duck_dx++;
+	      duck_look = 0;
+	  } else {
+	      if (big_duck_dx > -5)
+		big_duck_dx--;
+	      duck_look = 2;
+	  }
+	  tmp = player_y + 4;
+	  if (tmp >= big_duck_y) {
+	      if (big_duck_dy < 5)
+		big_duck_dy++;
+	  } else {
+	      if (big_duck_dy > -5)
+		big_duck_dy--;
+	  }
+	  tmp = (uint8_t)(big_duck_y + big_duck_dy);
+	  if (tmp < 0x28)
+	    big_duck_dy = -big_duck_dy;
+	  tmp = (uint8_t)(big_duck_x + big_duck_dx);
+	  if (tmp >= 0x90)
+	    big_duck_dx = -big_duck_dx;
+      }
+      DrawBigDuck();
+      big_duck_x += big_duck_dx;
+      big_duck_y += big_duck_dy;
+      big_duck_sprite = (~big_duck_sprite & 1) | duck_look;
+      DrawBigDuck();
+      return;
   }
-  if (duck_timer == 4)
-    goto label_269d;
-  goto label_24b5;
-label_2420:
-  duck_look = big_duck_sprite & 2;
-  if (!have_big_duck)
-    goto label_2494;
-  tmp = (uint8_t)(big_duck_x + 4);
-  if (tmp >= player_x)
-    goto label_2444;
-  if (big_duck_dx < 5)
-    big_duck_dx++;
-  duck_look = 0;
-  goto label_2452;
-label_2444:
-  if (big_duck_dx > -5)
-    big_duck_dx--;
-  duck_look = 2;
-label_2452:
-  tmp = player_y + 4;
-  if (tmp < big_duck_y)
-    goto label_2468;
-  if (big_duck_dy < 5)
-    big_duck_dy++;
-  goto label_2472;
-label_2468:
-  if (big_duck_dy > -5)
-    big_duck_dy--;
-label_2472:
-  tmp = (uint8_t)(big_duck_y + big_duck_dy);
-  if (tmp >= 0x28)
-    goto label_2483;
-  big_duck_dy = -big_duck_dy;
-label_2483:
-  tmp = (uint8_t)(big_duck_x + big_duck_dx);
-  if (tmp < 0x90)
-    goto label_2494;
-  big_duck_dx = -big_duck_dx;
-label_2494:
-  DrawBigDuck();
-  big_duck_x += big_duck_dx;
-  big_duck_y += big_duck_dy;
-  big_duck_sprite = (~big_duck_sprite & 1) | duck_look;
-  DrawBigDuck();
-  return;
-label_24b5:
+  if (duck_timer == 4) {
+      /* Update bonus/timer.  */
+      if (bonus_hold) {
+	  bonus_hold--;
+	  return;
+      }
+      x = 2;
+      do {
+	  DrawTimer(x);
+	  timer_ticks[x]--;
+	  flag = (timer_ticks[x] & 0x80) != 0;
+	  if (flag)
+	    timer_ticks[x] = 9;
+	  DrawTimer(x);
+	  x--;
+      } while (flag);
+      tmp = (uint8_t)(timer_ticks[0] + timer_ticks[1] + timer_ticks[2]);
+      if (tmp == 0) {
+	  is_dead++;
+	  return;
+      }
+      tmp = timer_ticks[2];
+      if (tmp != 0 && tmp != 5)
+	return;
+      if (zero_bonus)
+	return;
+      ReduceBonus();
+      return;
+  }
   if (current_duck == 0)
     current_duck = duck_speed;
   else
@@ -1000,167 +1014,121 @@ label_24b5:
     return;
   /* Move little duck.  */
   tmp = duck[current_duck].mode;
-  if (tmp == 1)
-    goto label_25ef;
-  if (tmp >= 1)
-    goto label_25b6;
-  x = duck[current_duck].tile_x;
-  y = duck[current_duck].tile_y;
-  newdir = 0;
-  tmp = Do_ReadMap(x - 1, y - 1);
-  if ((tmp & 1) != 0)
-    newdir = 1;
-  tmp = Do_ReadMap(x + 1, y - 1);
-  if ((tmp & 1) != 0)
-    newdir |= 2;
-  tmp = Do_ReadMap(x, y - 1);
-  if ((tmp & 2) != 0)
-    newdir |= 8;
-  tmp = Do_ReadMap(x, y + 2);
-  if ((tmp & 2) != 0)
-    newdir |= 4;
-  if (popcount(newdir) == 1) {
+  if (tmp > 1) {
+      /* Eat grain.  */
+      if (tmp == 4) {
+	  x = duck[current_duck].tile_x - 1;
+	  y = duck[current_duck].tile_y;
+	  if ((duck[current_duck].dir & 1) == 0)
+	    x += 2;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 8) != 0) {
+	      player_data->grain[tmp >> 4]--;
+	      RemoveGrain(x, y);
+	  }
+      }
+  } else if (tmp == 0) {
+      /* Figure out which way to go next.  */
+      x = duck[current_duck].tile_x;
+      y = duck[current_duck].tile_y;
+      newdir = 0;
+      tmp = Do_ReadMap(x - 1, y - 1);
+      if ((tmp & 1) != 0)
+	newdir = 1;
+      tmp = Do_ReadMap(x + 1, y - 1);
+      if ((tmp & 1) != 0)
+	newdir |= 2;
+      tmp = Do_ReadMap(x, y - 1);
+      if ((tmp & 2) != 0)
+	newdir |= 8;
+      tmp = Do_ReadMap(x, y + 2);
+      if ((tmp & 2) != 0)
+	newdir |= 4;
+      if (popcount(newdir) != 1) {
+	  tmp = duck[current_duck].dir;
+	  if (tmp < 4) {
+	      tmp ^= 0xfc;
+	  } else {
+	      tmp ^= 0xf3;
+	  }
+	  newdir &= tmp;
+      }
+      if (popcount(newdir) != 1) {
+	  tmp2 = newdir;
+	  do {
+	      FrobRandom();
+	      newdir = rand_low & tmp2;
+	  } while (popcount(newdir) != 1);
+      }
       duck[current_duck].dir = newdir;
-      goto label_257b;
+      /* Check for grain to eat.  */
+      tmp = duck[current_duck].dir;
+      tmp &= 3;
+      if (tmp != 0) {
+	  tmp &= 1;
+	  if (tmp != 0)
+	    tmp = Do_ReadMap(x - 1, y);
+	  else
+	    tmp = Do_ReadMap(x + 1, y);
+	  tmp &= 8;
+	  if (tmp != 0) {
+	      tmp = 2;
+	      duck[current_duck].mode = tmp;
+	  }
+      }
   }
-  tmp = duck[current_duck].dir;
-  if (tmp < 4) {
-      tmp ^= 0xfc;
-  } else {
-      tmp ^= 0xf3;
-  }
-  newdir &= tmp;
-  if (popcount(newdir) == 1) {
-      duck[current_duck].dir = newdir;
-      goto label_257b;
-  }
-  tmp2 = newdir;
-label_2564:
-  FrobRandom();
-  newdir = rand_low & tmp2;
-  if (popcount(newdir) != 1)
-    goto label_2564;
-  duck[current_duck].dir = newdir;
-label_257b:
-  tmp = duck[current_duck].dir;
-  tmp &= 3;
-  if (tmp == 0)
-    goto label_25ef;
-  tmp &= 1;
-  if (tmp == 0)
-    goto label_2593;
-  tmp = Do_ReadMap(x - 1, y);
-  goto label_259b;
-label_2593:
-  tmp = Do_ReadMap(x + 1, y);
-label_259b:
-  tmp &= 8;
-  if (tmp == 0)
-    goto label_25ef;
-  tmp = 2;
-  duck[current_duck].mode = tmp;
-  goto label_25ef;
-label_25b6:
-  if (tmp != 4)
-    goto label_25ef;
-  x = duck[current_duck].tile_x - 1;
-  y = duck[current_duck].tile_y;
-  if ((duck[current_duck].dir & 1) == 0)
-    x += 2;
-  tmp = Do_ReadMap(x, y);
-  if ((tmp & 8) == 0)
-    goto label_25ef;
-  player_data->grain[tmp >> 4]--;
-  RemoveGrain(x, y);
-label_25ef:
   DrawDuck(current_duck);
   tmp = duck[current_duck].mode;
-  if (tmp >= 2)
-    goto label_2675;
+  if (tmp >= 2) {
+      /* Eating.  */
+      tmp = duck[current_duck].mode << 1;
+      tmp &= 0x1f;
+      duck[current_duck].mode = tmp;
+      if (tmp != 0)
+	tmp = 6;
+      y = duck[current_duck].dir;
+      if (y == 1)
+	tmp += 2;
+      y = duck[current_duck].mode;
+      if (y == 8)
+	tmp++;
+      duck[current_duck].sprite = tmp;
+      DrawDuck(current_duck);
+      return;
+  }
+  /* Walking.  */
   tmp = duck[current_duck].dir;
-  if ((tmp & 1) != 0)
-    goto label_2633;
-  if ((tmp & 2) != 0)
-    goto label_2649;
-  if ((tmp & 4) != 0)
-    goto label_261d;
-  duck[current_duck].y -= 4;
-  tmp = duck[current_duck].mode;
-  if (tmp != 0)
-    duck[current_duck].tile_y--;
-  tmp = 4;
-  goto label_265f;
-label_261d:
-  duck[current_duck].y += 4;
-  tmp = duck[current_duck].mode;
-  if (tmp != 0)
-    duck[current_duck].tile_y++;
-  tmp = 4;
-  goto label_265f;
-label_2633:
-  duck[current_duck].x -= 4;
-  tmp = duck[current_duck].mode;
-  if (tmp != 0)
-    duck[current_duck].tile_x--;
-  tmp = 2;
-  goto label_265f;
-label_2649:
-  duck[current_duck].x += 4;
-  tmp = duck[current_duck].mode;
-  if (tmp != 0)
-    duck[current_duck].tile_x++;
-  tmp = 0;
-  goto label_265f;
-label_265f:
+  if ((tmp & 1) != 0) {
+      duck[current_duck].x -= 4;
+      tmp = duck[current_duck].mode;
+      if (tmp != 0)
+	duck[current_duck].tile_x--;
+      tmp = 2;
+  } else if ((tmp & 2) != 0) {
+      duck[current_duck].x += 4;
+      tmp = duck[current_duck].mode;
+      if (tmp != 0)
+	duck[current_duck].tile_x++;
+      tmp = 0;
+  } else if ((tmp & 4) != 0) {
+      duck[current_duck].y += 4;
+      tmp = duck[current_duck].mode;
+      if (tmp != 0)
+	duck[current_duck].tile_y++;
+      tmp = 4;
+  } else {
+      duck[current_duck].y -= 4;
+      tmp = duck[current_duck].mode;
+      if (tmp != 0)
+	duck[current_duck].tile_y--;
+      tmp = 4;
+  }
   y = duck[current_duck].mode ^ 1;
   duck[current_duck].mode = y;
   tmp += y;
   duck[current_duck].sprite = tmp;
   DrawDuck(current_duck);
   return;
-label_2675:
-  tmp = duck[current_duck].mode << 1;
-  tmp &= 0x1f;
-  duck[current_duck].mode = tmp;
-  if (tmp != 0)
-    tmp = 6;
-  y = duck[current_duck].dir;
-  if (y == 1)
-    tmp += 2;
-  y = duck[current_duck].mode;
-  if (y == 8)
-    tmp++;
-  duck[current_duck].sprite = tmp;
-  DrawDuck(current_duck);
-  return;
-label_269d:
-  /* Update bonus/timer.  */
-  if (bonus_hold) {
-      bonus_hold--;
-      return;
-  }
-  x = 2;
-label_26ac:
-  DrawTimer(x);
-  timer_ticks[x]--;
-  flag = (timer_ticks[x] & 0x80) != 0;
-  if (flag)
-    timer_ticks[x] = 9;
-  DrawTimer(x);
-  x--;
-  if (flag)
-    goto label_26ac;
-  tmp = (uint8_t)(timer_ticks[0] + timer_ticks[1] + timer_ticks[2]);
-  if (tmp == 0) {
-      is_dead++;
-      return;
-  }
-  tmp = timer_ticks[2];
-  if (tmp != 0 && tmp != 5)
-    return;
-  if (zero_bonus)
-    return;
-  ReduceBonus();
 }
 
 static void MaybeAddExtraLife(void)

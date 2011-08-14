@@ -363,8 +363,34 @@ static void DrawDuck(int n)
   Do_RenderSprite(x, duck[n].y, sprite, PLANE_BLUE);
 }
 
+static void ErasePlayer(void)
+{
+  Do_RenderSprite(player_x, player_y, player_sprite, PLANE_YELLOW);
+}
+
 static void DrawPlayer(void)
 {
+  sprite_t *const *ps;
+  int frame;
+
+  if (player_face == 0) {
+      ps = sprite_player_up;
+      frame = player_partial_y >> 1;
+  } else {
+      if ((player_face & 0x80) != 0)
+	ps = sprite_player_l;
+      else
+	ps = sprite_player_r;
+      frame = player_partial_x >> 1;
+  }
+  if (player_mode != 1) {
+      if (move_x == 0)
+	frame = 0;
+  } else {
+      if (move_y == 0)
+	frame = 0;
+  }
+  player_sprite = ps[frame];
   Do_RenderSprite(player_x, player_y, player_sprite, PLANE_YELLOW);
 }
 
@@ -410,7 +436,6 @@ static void StartLevel(void)
   /* Delay(3) */
   player_x = 0x3c;
   player_y = 0x20;
-  player_sprite = &SPRITE_PLAYER_R;
   DrawPlayer();
   player_tilex = 7;
   player_tiley = 2;
@@ -529,9 +554,8 @@ static void AnimatePlayer(void)
 {
     int tmp;
     int x, y;
-    sprite_t *const *ps;
 
-    DrawPlayer();
+    ErasePlayer();
     player_x += move_x;
     tmp = (int8_t)(player_partial_x + move_x);
     if (tmp < 0)
@@ -546,24 +570,6 @@ static void AnimatePlayer(void)
     if (tmp >= 8)
       player_tiley++;
     player_partial_y = tmp & 7;
-    if (player_face == 0) {
-	ps = sprite_player_up;
-	tmp = player_partial_y >> 1;
-    } else {
-	if ((player_face & 0x80) != 0)
-	  ps = sprite_player_l;
-	else
-	  ps = sprite_player_r;
-	tmp = player_partial_x >> 1;
-    }
-    if (player_mode != 1) {
-	if (move_x == 0)
-	  tmp = 0;
-    } else {
-	if (move_y == 0)
-	  tmp = 0;
-    }
-    player_sprite = ps[tmp];
     DrawPlayer();
     x = player_tilex;
     y = player_tiley;
@@ -711,9 +717,7 @@ label_2062:
       tmp = lift_y1;
       if (tmp == y1)
 	goto label_208f;
-      if (tmp >= y1)
-	goto label_2099;
-      if (tmp < y2)
+      if (tmp >= y1 || tmp < y2)
 	goto label_2099;
 label_208f:
       if (current_lift != 0)

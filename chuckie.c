@@ -31,11 +31,12 @@ uint8_t lift_y2;
 uint8_t current_lift;
 int have_big_duck;
 int duck_timer;
-int big_duck_sprite;
+int big_duck_frame;
 uint8_t big_duck_x;
 int big_duck_dx;
 uint8_t big_duck_y;
 int big_duck_dy;
+int big_duck_dir;
 int num_ducks;
 int current_duck;
 int duck_speed;
@@ -275,11 +276,15 @@ static void LoadLevel(void)
     }
 }
 
-/* DrawBigDuck */
 static void DrawBigDuck(void)
 {
-  Do_RenderSprite(big_duck_x, big_duck_y,
-		  sprite_big_duck[big_duck_sprite], 4);
+  sprite_t *sprite;
+  if (big_duck_dir) {
+      sprite = big_duck_frame ? &SPRITE_BIGDUCK_L2 : &SPRITE_BIGDUCK_L1;
+  } else {
+      sprite = big_duck_frame ? &SPRITE_BIGDUCK_R2 : &SPRITE_BIGDUCK_R1;
+  }
+  Do_RenderSprite(big_duck_x, big_duck_y, sprite, 4);
 }
 
 /* DrawDuck */
@@ -293,7 +298,6 @@ static void DrawDuck(int n)
   Do_RenderSprite(x, duck[n].y, sprite_duck[duck[n].sprite], 8);
 }
 
-/* DrawBigBird? */
 static void DrawPlayer(void)
 {
   Do_RenderSprite(player_x, player_y, player_sprite, 4);
@@ -322,7 +326,8 @@ static void StartLevel(void)
   big_duck_x = 4;
   big_duck_y = 0xcc;
   big_duck_dx = big_duck_dy = 0;
-  big_duck_sprite = 0;
+  big_duck_frame = 0;
+  big_duck_dir = 0;
   DrawBigDuck();
   if ((current_level >> 3) == 1) {
       num_ducks = 0;
@@ -935,7 +940,6 @@ static void MoveDucks(void)
   int y;
   int x;
   int flag;
-  int duck_look;
   int tmp2;
   int newdir;
 
@@ -943,17 +947,17 @@ static void MoveDucks(void)
   if (duck_timer == 8) {
       /* Big Duck.  */
       duck_timer = 0;
-      duck_look = big_duck_sprite & 2;
+      DrawBigDuck();
       if (have_big_duck) {
 	  tmp = (uint8_t)(big_duck_x + 4);
 	  if (tmp < player_x) {
 	      if (big_duck_dx < 5)
 		big_duck_dx++;
-	      duck_look = 0;
+	      big_duck_dir = 0;
 	  } else {
 	      if (big_duck_dx > -5)
 		big_duck_dx--;
-	      duck_look = 2;
+	      big_duck_dir = 1;
 	  }
 	  tmp = player_y + 4;
 	  if (tmp >= big_duck_y) {
@@ -970,10 +974,9 @@ static void MoveDucks(void)
 	  if (tmp >= 0x90)
 	    big_duck_dx = -big_duck_dx;
       }
-      DrawBigDuck();
       big_duck_x += big_duck_dx;
       big_duck_y += big_duck_dy;
-      big_duck_sprite = (~big_duck_sprite & 1) | duck_look;
+      big_duck_frame ^= 1;
       DrawBigDuck();
       return;
   }

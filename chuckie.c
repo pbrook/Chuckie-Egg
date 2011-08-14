@@ -63,6 +63,13 @@ uint8_t buttons;
 uint32_t rand_high;
 uint8_t rand_low;
 
+/* Direction bitflags  */
+#define DIR_L		1
+#define DIR_R		2
+#define DIR_UP		4
+#define DIR_DOWN	8
+#define DIR_HORIZ	(DIR_R | DIR_L)
+
 typedef struct {
     uint8_t score[8];
     uint8_t bonus[4];
@@ -73,15 +80,24 @@ typedef struct {
 playerdata_t all_player_data[4];
 #define player_data (&all_player_data[current_player])
 
-struct {
+typedef enum {
+    DUCK_BORED,
+    DUCK_STEP,
+    DUCK_EAT1,
+    DUCK_EAT2,
+    DUCK_EAT3,
+    DUCK_EAT4
+} duck_state;
+
+typedef struct {
     uint8_t x;
     uint8_t y;
     uint8_t tile_x;
     uint8_t tile_y;
-    uint8_t mode;
-    uint8_t sprite;
+    duck_state mode;
     uint8_t dir;
-} duck[5];
+} duckinfo_t;
+duckinfo_t duck[5];
 
 uint8_t pixels[160 * 256];
 
@@ -287,15 +303,51 @@ static void DrawBigDuck(void)
   Do_RenderSprite(big_duck_x, big_duck_y, sprite, 4);
 }
 
-/* DrawDuck */
 static void DrawDuck(int n)
 {
   int x;
+  int dir;
+  sprite_t *sprite;
 
   x = duck[n].x;
-  if (duck[n].sprite >= 8)
-    x -= 8;
-  Do_RenderSprite(x, duck[n].y, sprite_duck[duck[n].sprite], 8);
+  dir = duck[n].dir;
+  switch (duck[n].mode) {
+  case DUCK_BORED:
+      if (dir & DIR_HORIZ) {
+	  sprite = (dir == DIR_R) ? &SPRITE_DUCK_R : &SPRITE_DUCK_L;
+      } else {
+	  sprite = &SPRITE_DUCK_UP;
+      }
+      break;
+  case DUCK_STEP:
+      if (dir & DIR_HORIZ) {
+	  sprite = (dir == DIR_R) ? &SPRITE_DUCK_R2 : &SPRITE_DUCK_L2;
+      } else {
+	  sprite = &SPRITE_DUCK_UP2;
+      }
+      break;
+  case DUCK_EAT2:
+  case DUCK_EAT4:
+      if (dir == DIR_R) {
+	 sprite = &SPRITE_DUCK_EAT_R;
+      } else {
+	 sprite = &SPRITE_DUCK_EAT_L;
+	 x -= 8;
+      }
+      break;
+  case DUCK_EAT3:
+      if (dir == DIR_R) {
+	 sprite = &SPRITE_DUCK_EAT_R2;
+      } else {
+	 sprite = &SPRITE_DUCK_EAT_L2;
+	 x -= 8;
+      }
+      break;
+  default:
+      abort();
+  };
+
+  Do_RenderSprite(x, duck[n].y, sprite, 8);
 }
 
 static void DrawPlayer(void)
@@ -338,8 +390,7 @@ static void StartLevel(void)
   for (i = 0; i < num_ducks; i++) {
       duck[i].x = duck[i].tile_x << 3;
       duck[i].y = (duck[i].tile_y << 3) + 0x14;
-      duck[i].mode = 0;
-      duck[i].sprite = 0;
+      duck[i].mode = DUCK_BORED;
       duck[i].dir = 2;
       DrawDuck(i);
   }
@@ -942,6 +993,7 @@ static void MoveDucks(void)
   int flag;
   int tmp2;
   int newdir;
+  duckinfo_t *this_duck;
 
   duck_timer++;
   if (duck_timer == 8) {
@@ -1015,14 +1067,15 @@ static void MoveDucks(void)
     current_duck--;
   if (current_duck >= num_ducks)
     return;
+  DrawDuck(current_duck);
   /* Move little duck.  */
-  tmp = duck[current_duck].mode;
-  if (tmp > 1) {
+  this_duck = &duck[current_duck];
+  if (this_duck->mode >= DUCK_EAT1) {
       /* Eat grain.  */
-      if (tmp == 4) {
+      if (this_duck->mode == DUCK_EAT2) {
 	  x = duck[current_duck].tile_x - 1;
 	  y = duck[current_duck].tile_y;
-	  if ((duck[current_duck].dir & 1) == 0)
+	  if ((duck[current_duck].dir & DIR_L) == 0)
 	    x += 2;
 	  tmp = Do_ReadMap(x, y);
 	  if ((tmp & 8) != 0) {
@@ -1030,26 +1083,26 @@ static void MoveDucks(void)
 	      RemoveGrain(x, y);
 	  }
       }
-  } else if (tmp == 0) {
+  } else if (this_duck->mode == DUCK_BORED) {
       /* Figure out which way to go next.  */
       x = duck[current_duck].tile_x;
       y = duck[current_duck].tile_y;
       newdir = 0;
       tmp = Do_ReadMap(x - 1, y - 1);
       if ((tmp & 1) != 0)
-	newdir = 1;
+	newdir = DIR_L;
       tmp = Do_ReadMap(x + 1, y - 1);
       if ((tmp & 1) != 0)
-	newdir |= 2;
+	newdir |= DIR_R;
       tmp = Do_ReadMap(x, y - 1);
       if ((tmp & 2) != 0)
-	newdir |= 8;
+	newdir |= DIR_DOWN;
       tmp = Do_ReadMap(x, y + 2);
       if ((tmp & 2) != 0)
-	newdir |= 4;
+	newdir |= DIR_UP;
       if (popcount(newdir) != 1) {
-	  tmp = duck[current_duck].dir;
-	  if (tmp < 4) {
+	  tmp = this_duck->dir;
+	  if (tmp & DIR_HORIZ) {
 	      tmp ^= 0xfc;
 	  } else {
 	      tmp ^= 0xf3;
@@ -1065,71 +1118,55 @@ static void MoveDucks(void)
       }
       duck[current_duck].dir = newdir;
       /* Check for grain to eat.  */
-      tmp = duck[current_duck].dir;
-      tmp &= 3;
-      if (tmp != 0) {
-	  tmp &= 1;
-	  if (tmp != 0)
+      tmp = this_duck->dir;
+      if (tmp & DIR_HORIZ) {
+	  if (tmp == DIR_L)
 	    tmp = Do_ReadMap(x - 1, y);
 	  else
 	    tmp = Do_ReadMap(x + 1, y);
 	  tmp &= 8;
 	  if (tmp != 0) {
-	      tmp = 2;
-	      duck[current_duck].mode = tmp;
+	      this_duck->mode = DUCK_EAT1;
 	  }
       }
   }
-  DrawDuck(current_duck);
-  tmp = duck[current_duck].mode;
-  if (tmp >= 2) {
+  if (this_duck->mode >= DUCK_EAT1) {
       /* Eating.  */
-      tmp = duck[current_duck].mode << 1;
-      tmp &= 0x1f;
-      duck[current_duck].mode = tmp;
-      if (tmp != 0)
-	tmp = 6;
-      y = duck[current_duck].dir;
-      if (y == 1)
-	tmp += 2;
-      y = duck[current_duck].mode;
-      if (y == 8)
-	tmp++;
-      duck[current_duck].sprite = tmp;
+      if (this_duck->mode == DUCK_EAT4)
+	this_duck->mode = DUCK_BORED;
+      else
+	this_duck->mode++;
       DrawDuck(current_duck);
       return;
   }
   /* Walking.  */
-  tmp = duck[current_duck].dir;
-  if ((tmp & 1) != 0) {
-      duck[current_duck].x -= 4;
-      tmp = duck[current_duck].mode;
-      if (tmp != 0)
-	duck[current_duck].tile_x--;
-      tmp = 2;
-  } else if ((tmp & 2) != 0) {
-      duck[current_duck].x += 4;
-      tmp = duck[current_duck].mode;
-      if (tmp != 0)
-	duck[current_duck].tile_x++;
-      tmp = 0;
-  } else if ((tmp & 4) != 0) {
-      duck[current_duck].y += 4;
-      tmp = duck[current_duck].mode;
-      if (tmp != 0)
-	duck[current_duck].tile_y++;
-      tmp = 4;
+  if (this_duck->mode == DUCK_STEP) {
+      this_duck->mode = DUCK_BORED;
+      flag = 1;
   } else {
-      duck[current_duck].y -= 4;
-      tmp = duck[current_duck].mode;
-      if (tmp != 0)
-	duck[current_duck].tile_y--;
-      tmp = 4;
+      this_duck->mode = DUCK_STEP;
+      flag = 0;
   }
-  y = duck[current_duck].mode ^ 1;
-  duck[current_duck].mode = y;
-  tmp += y;
-  duck[current_duck].sprite = tmp;
+  switch (this_duck->dir) {
+  case DIR_L:
+      duck[current_duck].x -= 4;
+      duck[current_duck].tile_x -= flag;
+      break;
+  case DIR_R:
+      duck[current_duck].x += 4;
+      duck[current_duck].tile_x += flag;
+      break;
+  case DIR_UP:
+      duck[current_duck].y += 4;
+      duck[current_duck].tile_y += flag;
+      break;
+  case DIR_DOWN:
+      duck[current_duck].y -= 4;
+      duck[current_duck].tile_y -= flag;;
+      break;
+  default:
+      abort();
+  }
   DrawDuck(current_duck);
   return;
 }

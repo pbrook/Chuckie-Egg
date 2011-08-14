@@ -210,15 +210,3 @@ sprite_t *const sprite_player_up[4] = {
     &SPRITE_PLAYER_UP,
     &SPRITE_PLAYER_UP3
 };
-sprite_t *const sprite_duck[10] = {
-    &SPRITE_DUCK_R,
-    &SPRITE_DUCK_R2,
-    &SPRITE_DUCK_L,
-    &SPRITE_DUCK_L2,
-    &SPRITE_DUCK_UP,
-    &SPRITE_DUCK_UP2,
-    &SPRITE_DUCK_EAT_R,
-    &SPRITE_DUCK_EAT_R2,
-    &SPRITE_DUCK_EAT_L,
-    &SPRITE_DUCK_EAT_L2
-};

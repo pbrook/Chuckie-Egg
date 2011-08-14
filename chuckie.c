@@ -715,26 +715,21 @@ label_2062:
       y1 = player_y - 0x11;
       y2 = player_y - 0x13 + (int8_t)move_y;
       tmp = lift_y1;
-      if (tmp == y1)
-	goto label_208f;
-      if (tmp >= y1 || tmp < y2)
-	goto label_2099;
-label_208f:
-      if (current_lift != 0)
-	tmp++;
-      goto label_20ac;
-label_2099:
-      tmp = lift_y2;
-      if (tmp == y1)
-	goto label_20a5;
-      if (tmp >= y1)
-	goto label_20bf;
-      if (tmp < y2)
-	goto label_20bf;
-label_20a5:
-      if (current_lift == 0)
-	tmp++;
-label_20ac:
+      if (tmp > y1 || tmp < y2) {
+	  tmp = lift_y2;
+	  if (tmp != y1)
+	    {
+	      if (tmp >= y1)
+		goto label_20bf;
+	      if (tmp < y2)
+		goto label_20bf;
+	    }
+	  if (current_lift == 0)
+	    tmp++;
+      } else {
+	  if (current_lift != 0)
+	    tmp++;
+      }
       tmp -= y1;
       move_y = tmp + 1;
       player_fall = 0;
@@ -761,25 +756,21 @@ label_20cd:
 	  move_y = ~tmp;
       }
       tmp = (int8_t)(move_y + player_partial_y);
-      if (tmp == 0)
-	goto label_212b;
-      if (tmp >= 0)
-	goto label_213b;
-      x = player_tilex;
-      y = player_tiley - 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 1) == 0)
-	goto label_213b;
-      player_mode = 0;
-      move_y = -player_partial_y;
-      goto label_213b;
-label_212b:
-      x = player_tilex;
-      y = player_tiley - 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 1) != 0)
-	player_mode = 0;
-label_213b:
+      if (tmp == 0) {
+	  x = player_tilex;
+	  y = player_tiley - 1;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 1) != 0)
+	    player_mode = 0;
+      } else if (tmp < 0) {
+	  x = player_tilex;
+	  y = player_tiley - 1;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 1) != 0) {
+	      player_mode = 0;
+	      move_y = -player_partial_y;
+	  }
+      }
       break;
   case 1: /* Climb */
       if ((buttons & 0x10) != 0)

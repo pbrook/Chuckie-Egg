@@ -42,29 +42,35 @@ extern const uint8_t *const levels[8];
 #define DIR_DOWN	8
 #define DIR_HORIZ	(DIR_R | DIR_L)
 
+typedef enum {
+    PLAYER_WALK,
+    PLAYER_CLIMB,
+    PLAYER_JUMP,
+    PLAYER_FALL,
+    PLAYER_LIFT
+} player_mode_t;
+
 extern int current_player;
 extern int num_players;
 extern int current_level;
 
-extern uint8_t player_x;
-extern uint8_t player_y;
-extern uint8_t player_partial_x;
-extern uint8_t player_partial_y;
-extern uint8_t player_mode;
-extern uint8_t player_face;
-extern uint8_t move_x;
-extern uint8_t move_y;
+extern int player_x;
+extern int player_y;
+extern player_mode_t player_mode;
+extern int player_face;
+extern int move_x;
+extern int move_y;
 extern uint8_t bonus[4];
 extern uint8_t timer_ticks[3];
 extern uint8_t levelmap[20 * 25];
 extern int have_lift;
-extern uint8_t lift_x;
-extern uint8_t lift_y[2];
+extern int lift_x;
+extern int lift_y[2];
 
 extern int have_big_duck;
 extern int big_duck_frame;
-extern uint8_t big_duck_x;
-extern uint8_t big_duck_y;
+extern int big_duck_x;
+extern int big_duck_y;
 extern int big_duck_dir;
 
 typedef enum {
@@ -82,7 +88,7 @@ typedef struct {
     uint8_t tile_x;
     uint8_t tile_y;
     duck_state mode;
-    uint8_t dir;
+    int dir;
 } duckinfo_t;
 extern duckinfo_t duck[5];
 extern int num_ducks;
@@ -92,7 +98,7 @@ typedef struct {
     uint8_t bonus[4];
     uint8_t egg[16];
     uint8_t grain[16];
-    uint8_t lives;
+    int lives;
 } playerdata_t;
 
 extern playerdata_t all_player_data[4];

@@ -14,14 +14,14 @@ raster_hooks *raster = NULL;
 void PollKeys(void)
 {
     int c;
-    static int last_mode;
+    static player_mode_t last_mode;
 
     if (player_mode != last_mode) {
-	if (player_mode == 0) {
+	if (player_mode == PLAYER_WALK) {
 	    button_ack |= 0xc;
-	} else if (player_mode == 1) {
+	} else if (player_mode == PLAYER_CLIMB) {
 	    button_ack |= 3;
-	} else if (player_mode == 4) {
+	} else if (player_mode == PLAYER_LIFT) {
 	    button_ack |= 0xf;
 	}
 	last_mode = player_mode;

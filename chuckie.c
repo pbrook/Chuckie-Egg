@@ -23,16 +23,16 @@ int current_level;
 int eggs_left;
 int bonus_hold;
 int have_lift;
-uint8_t lift_x;
-uint8_t lift_y[2];
-uint8_t current_lift;
+int lift_x;
+int lift_y[2];
+static int current_lift;
 int have_big_duck;
 int duck_timer;
 int big_duck_frame;
-uint8_t big_duck_x;
-int big_duck_dx;
-uint8_t big_duck_y;
-int big_duck_dy;
+int big_duck_x;
+static int big_duck_dx;
+int big_duck_y;
+static int big_duck_dy;
 int big_duck_dir;
 int num_ducks;
 int current_duck;
@@ -41,19 +41,18 @@ uint8_t bonus[4];
 uint8_t timer_ticks[3];
 uint8_t level[4];
 uint8_t levelmap[20 * 25];
-/* 0 = Walking, 1 = Climbing, 2 = Jumping, 3 = Falling, 4 = Lift */
-uint8_t player_mode;
-uint8_t player_fall;
-uint8_t player_slide;
-uint8_t player_face;
-uint8_t player_x;
-uint8_t player_y;
-uint8_t player_tilex;
-uint8_t player_tiley;
-uint8_t player_partial_x;
-uint8_t player_partial_y;
-uint8_t move_x;
-uint8_t move_y;
+player_mode_t player_mode = PLAYER_WALK;
+static int player_fall;
+static int player_slide;
+int player_face;
+int player_x;
+int player_y;
+static int player_tilex;
+static int player_tiley;
+static int player_partial_x;
+static int player_partial_y;
+int move_x;
+int move_y;
 uint8_t buttons;
 uint8_t button_ack;
 uint32_t rand_high;
@@ -64,7 +63,7 @@ playerdata_t all_player_data[4];
 
 duckinfo_t duck[5];
 
-/* Duck code generates out of bounds reads.  */
+/* Movement code generates out of bounds reads.  */
 static int Do_ReadMap(uint8_t x, uint8_t y)
 {
   if (y >= 0x19 || x >= 0x14) {
@@ -101,9 +100,7 @@ static void LoadLevel(void)
     i = current_level >> 4;
     if (i > 8)
 	i = 8;
-    i ^= 0xff;
-    i = (i + 10) & 0xff;
-    timer_ticks[0] = i;
+    timer_ticks[0] = 9 - i;
     timer_ticks[1] = 0;
     timer_ticks[2] = 0;
 
@@ -116,7 +113,7 @@ static void LoadLevel(void)
     have_lift = *(p++);
     num_grain = *(p++);
     num_ducks = *(p++);
-    for (i = 0; i < 0x200; i++)
+    for (i = 0; i < 20 * 25; i++)
       levelmap[i] = 0;
 
     while (num_walls--) {
@@ -219,7 +216,7 @@ static void StartLevel(void)
   player_tiley = 2;
   player_partial_x = 7;
   player_partial_y = 0;
-  player_mode = 0;
+  player_mode = PLAYER_WALK;
   player_face = 1;
   button_ack = 0x1f;
   DrawLastLife();
@@ -229,7 +226,7 @@ static void StartLevel(void)
 static int MoveSideways(void)
 {
   int tmp, x, y;
-  tmp = (int8_t)move_x;
+  tmp = move_x;
   if (tmp == 0)
     return 0;
   if (tmp < 0) {
@@ -242,14 +239,14 @@ static int MoveSideways(void)
 
       x = player_tilex - 1;
       y = player_tiley;
-      tmp = player_partial_y + (int8_t)move_y;
+      tmp = player_partial_y + move_y;
       if (tmp < 0)
 	y--;
       else if (tmp >= 8)
 	y++;
       if (Do_ReadMap(x, y) == 1)
 	return 1;
-      if ((move_y & 0x80) == 0)
+      if (move_y >= 0)
 	return 0;
       x = player_tilex - 1;
       y++;
@@ -264,14 +261,14 @@ static int MoveSideways(void)
     return 0;
   x = player_tilex + 1;
   y = player_tiley;
-  tmp = player_partial_y + (int8_t)move_y;
+  tmp = player_partial_y + move_y;
   if (tmp < 0)
     y--;
   else if (tmp >= 8)
     y++;
   if (Do_ReadMap(x, y) == 1)
     return 1;
-  if ((move_y & 0x80) == 0)
+  if (move_y >= 0)
     return 0;
   x = player_tilex + 1;
   y++;
@@ -333,14 +330,14 @@ static void AnimatePlayer(void)
     if (raster)
 	raster->erase_player();
     player_x += move_x;
-    tmp = (int8_t)(player_partial_x + move_x);
+    tmp = player_partial_x + move_x;
     if (tmp < 0)
       player_tilex--;
     if (tmp >= 8)
       player_tilex++;
     player_partial_x = tmp & 7;
     player_y += move_y;
-    tmp = (int8_t)(player_partial_y + move_y);
+    tmp = player_partial_y + move_y;
     if (tmp < 0)
       player_tiley--;
     if (tmp >= 8)
@@ -385,7 +382,7 @@ static void PlayerGrabLadder(int want_move)
   int x;
   int y;
 
-  tmp = (int8_t)(player_partial_x + move_x);
+  tmp = player_partial_x + move_x;
   if (tmp != 3)
       return;
   if (want_move == 0)
@@ -401,7 +398,7 @@ static void PlayerGrabLadder(int want_move)
 	  if ((tmp & 2) == 0)
 	    return;
       }
-      player_mode = 1;
+      player_mode = PLAYER_CLIMB;
       tmp = player_partial_y + move_y;
       if (tmp & 1)
 	  move_y++;
@@ -417,7 +414,7 @@ static void PlayerGrabLadder(int want_move)
   tmp = Do_ReadMap(x, y);
   if ((tmp & 2) == 0)
     return;
-  player_mode = 1;
+  player_mode = PLAYER_CLIMB;
   tmp = player_partial_y + move_y;
   if (tmp & 1)
       move_y--;
@@ -432,14 +429,10 @@ static void PlayerHitLift(void)
 
   if (!have_lift)
     return;
-  tmp = (uint8_t)(lift_x - 1);
-  if (tmp >= player_x)
-    return;
-  tmp = (uint8_t)(tmp + 0x0a);
-  if (tmp < player_x)
+  if ((lift_x > player_x) || (lift_x + 10 < player_x))
     return;
   y1 = player_y - 0x11;
-  y2 = player_y - 0x13 + (int8_t)move_y;
+  y2 = player_y - 0x13 + move_y;
   tmp = lift_y[0];
   if (tmp > y1 || tmp < y2) {
       tmp = lift_y[1];
@@ -459,7 +452,7 @@ static void PlayerHitLift(void)
   tmp -= y1;
   move_y = tmp + 1;
   player_fall = 0;
-  player_mode = 4;
+  player_mode = PLAYER_LIFT;
 }
 
 static void PlayerJump(void)
@@ -470,7 +463,7 @@ static void PlayerJump(void)
   int y;
 
   move_x = player_slide;
-  tmp2 = (int8_t)move_y;
+  tmp2 = move_y;
   tmp = player_fall >> 2;
   if (tmp >= 6)
     tmp = 6;
@@ -481,37 +474,37 @@ static void PlayerJump(void)
       player_fall = 0x0c;
   } else {
       PlayerGrabLadder(tmp2);
-      if (player_mode == 1)
+      if (player_mode == PLAYER_CLIMB)
 	  return;
   }
 
-  tmp = (uint8_t)(move_y + player_partial_y);
+  tmp = move_y + player_partial_y;
   if (tmp == 0) {
       x = player_tilex;
       y = player_tiley - 1;
       tmp = Do_ReadMap(x, y);
       if ((tmp & 1) != 0)
-	player_mode = 0;
-  } else if ((tmp & 0x80) == 0) {
+	player_mode = PLAYER_WALK;
+  } else if (tmp > 0) {
       if (tmp == 8) {
 	  x = player_tilex;
 	  y = player_tiley;
 	  tmp = Do_ReadMap(x, y);
 	  if ((tmp & 1) != 0)
-	    player_mode = 0;
+	    player_mode = PLAYER_WALK;
       }
   } else {
       x = player_tilex;
       y = player_tiley - 1;
       tmp = Do_ReadMap(x, y);
       if ((tmp & 1) != 0) {
-	  player_mode = 0;
+	  player_mode = PLAYER_WALK;
 	  move_y = -player_partial_y;
       }
   }
 
   PlayerHitLift();
-  if (player_mode == 4)
+  if (player_mode == PLAYER_LIFT)
       return;
 
   if (MoveSideways()) {
@@ -526,7 +519,7 @@ static void StartPlayerJump(void)
 
     button_ack |= 0x10;
     player_fall = 0;
-    player_mode = 2;
+    player_mode = PLAYER_JUMP;
     tmp = move_x;
     player_slide = tmp;
     if (tmp != 0)
@@ -554,40 +547,40 @@ static void MovePlayer(void)
   }
   move_y <<= 1;
   switch (player_mode) {
-  case 2: /* Jump */
+  case PLAYER_JUMP:
       PlayerJump();
       break;
-  case 3: /* Fall */
+  case PLAYER_FALL:
       player_fall++;
       tmp = player_fall;
       if (tmp < 4) {
 	  move_x = player_slide;
-	  move_y = 0xff;
+	  move_y = -1;
       } else {
 	  move_x = 0;
 	  tmp = player_fall >> 2;
-	  if (tmp >= 4)
+	  if (tmp > 3)
 	    tmp = 3;
-	  move_y = ~tmp;
+	  move_y = -(tmp + 1);
       }
-      tmp = (int8_t)(move_y + player_partial_y);
+      tmp = move_y + player_partial_y;
       if (tmp == 0) {
 	  x = player_tilex;
 	  y = player_tiley - 1;
 	  tmp = Do_ReadMap(x, y);
 	  if ((tmp & 1) != 0)
-	    player_mode = 0;
+	    player_mode = PLAYER_WALK;
       } else if (tmp < 0) {
 	  x = player_tilex;
 	  y = player_tiley - 1;
 	  tmp = Do_ReadMap(x, y);
 	  if ((tmp & 1) != 0) {
-	      player_mode = 0;
+	      player_mode = PLAYER_WALK;
 	      move_y = -player_partial_y;
 	  }
       }
       break;
-  case 1: /* Climb */
+  case PLAYER_CLIMB:
       if ((buttons & 0x10) != 0) {
 	  StartPlayerJump();
 	  break;
@@ -598,13 +591,13 @@ static void MovePlayer(void)
 	  tmp = Do_ReadMap(x, y);
 	  if ((tmp & 1) != 0) {
 	      move_y = 0;
-	      player_mode = 0;
+	      player_mode = PLAYER_WALK;
 	  }
       }
-      if (player_mode != 0) {
+      if (player_mode != PLAYER_WALK) {
 	  move_x = 0;
 	  if (move_y != 0 && player_partial_y == 0) {
-	      if ((move_y & 0x80) == 0) {
+	      if (move_y >= 0) {
 		  x = player_tilex;
 		  y = player_tiley + 2;
 		  tmp = Do_ReadMap(x, y);
@@ -626,10 +619,10 @@ static void MovePlayer(void)
 	  StartPlayerJump();
 	  break;
       }
-      if (lift_x - 1 >= player_x || lift_x + 9 < player_x) {
+      if (lift_x > player_x || lift_x + 9 < player_x) {
 	  player_fall = 0;
 	  player_slide = 0;
-	  player_mode = 3;
+	  player_mode = PLAYER_FALL;
       }
       move_y = 1;
       if (move_x != 0)
@@ -640,8 +633,7 @@ static void MovePlayer(void)
       if (player_y >= 0xdc)
 	is_dead++;
       break;
-  case 0:
-      /* Walk */
+  case PLAYER_WALK:
       if (buttons & 0x10) {
 	  StartPlayerJump();
 	  break;
@@ -649,20 +641,20 @@ static void MovePlayer(void)
       if (move_y) {
 	  if (player_partial_x == 3) {
 	      x = player_tilex;
-	      if ((move_y & 0x80) == 0)
+	      if (move_y >= 0)
 		  y = player_tiley + 2;
 	      else 
 		  y = player_tiley - 1;
 	      tmp = Do_ReadMap(x, y);
 	      if ((tmp & 2) != 0) {
 		  move_x = 0;
-		  player_mode = 1;
+		  player_mode = PLAYER_CLIMB;
 		  break;
 	      }
 	  }
 	  move_y = 0;
       }
-      tmp = (int8_t)(player_partial_x + move_x);
+      tmp = player_partial_x + move_x;
       x = player_tilex;
       if (tmp < 0)
 	x--;
@@ -670,8 +662,7 @@ static void MovePlayer(void)
 	x++;
       y = player_tiley - 1;
       tmp = Do_ReadMap(x, y);
-      tmp &= 1;
-      if (tmp == 0) {
+      if ((tmp & 1) == 0) {
 	  /* Walk off edge */
 	  int n;
 	  n = (move_x + player_partial_x) & 7;
@@ -680,11 +671,11 @@ static void MovePlayer(void)
 	      y = 1;
 	  } else {
 	      y = 0;
-	      x = 0xff;
+	      x = -1;
 	  }
 	  player_slide = x;
 	  player_fall = y;
-	  player_mode = 3;
+	  player_mode = PLAYER_FALL;
       }
       if (MoveSideways()) {
 	  move_x = 0;
@@ -716,13 +707,13 @@ static void MakeSound(void)
   case 2:
       tmp = player_fall;
       if (tmp >= 0x0b) {
-	  tmp = (uint8_t)(0xbe - (player_fall * 2));
+	  tmp = 0xbe - (player_fall * 2);
       } else {
-	  tmp = (uint8_t)(0x96 + (player_fall * 2));
+	  tmp = 0x96 + (player_fall * 2);
       }
       break;
   case 3:
-      tmp = (uint8_t)(0x6e - (player_fall * 2));
+      tmp = 0x6e - (player_fall * 2);
       break;
   case 4:
       if (move_x == 0)
@@ -807,7 +798,7 @@ static void MoveDucks(void)
       if (raster)
 	  raster->draw_big_duck();
       if (have_big_duck) {
-	  tmp = (uint8_t)(big_duck_x + 4);
+	  tmp = big_duck_x + 4;
 	  if (tmp < player_x) {
 	      if (big_duck_dx < 5)
 		big_duck_dx++;
@@ -825,11 +816,11 @@ static void MoveDucks(void)
 	      if (big_duck_dy > -5)
 		big_duck_dy--;
 	  }
-	  tmp = (uint8_t)(big_duck_y + big_duck_dy);
+	  tmp = big_duck_y + big_duck_dy;
 	  if (tmp < 0x28)
 	    big_duck_dy = -big_duck_dy;
-	  tmp = (uint8_t)(big_duck_x + big_duck_dx);
-	  if (tmp >= 0x90)
+	  tmp = big_duck_x + big_duck_dx;
+	  if (tmp < 0 || tmp >= 0x90)
 	    big_duck_dx = -big_duck_dx;
       }
       big_duck_x += big_duck_dx;
@@ -857,7 +848,7 @@ static void MoveDucks(void)
 	      raster->draw_timer(x);
 	  x--;
       } while (flag);
-      tmp = (uint8_t)(timer_ticks[0] + timer_ticks[1] + timer_ticks[2]);
+      tmp = timer_ticks[0] + timer_ticks[1] + timer_ticks[2];
       if (tmp == 0) {
 	  abort();
 	  is_dead++;
@@ -999,16 +990,16 @@ static void CollisionDetect(void)
 
     /* Little ducks */
     for (n = 0; n < num_ducks; n++) {
-	if ((uint8_t)((duck[n].x - player_x) + 5) < 0x0b
-	    && (uint8_t)((duck[n].y - 1) - player_y + 0xe) < 0x1d)
+	if ((unsigned)((duck[n].x - player_x) + 5) < 0x0b
+	    && (unsigned)((duck[n].y - 1) - player_y + 0xe) < 0x1d)
 	  is_dead++;
     }
     /* Big duck */
     if (!have_big_duck)
       return;
-    if ((uint8_t)(big_duck_x + 4 - player_x + 5) >= 0x0b)
+    if ((unsigned)(big_duck_x + 4 - player_x + 5) >= 0x0b)
       return;
-    if ((uint8_t)(big_duck_y - 5 - player_y + 0x0e) >= 0x1d)
+    if ((unsigned)(big_duck_y - 5 - player_y + 0x0e) >= 0x1d)
       return;
     is_dead++;
 }

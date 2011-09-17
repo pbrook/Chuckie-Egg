@@ -79,15 +79,15 @@ static void DrawPlayer(void)
 
   if (player_face == 0) {
       ps = sprite_player_up;
-      frame = player_partial_y >> 1;
+      frame = (player_y >> 1) & 3;
   } else {
-      if ((player_face & 0x80) != 0)
+      if (player_face < 0)
 	ps = sprite_player_l;
       else
 	ps = sprite_player_r;
-      frame = player_partial_x >> 1;
+      frame = (player_x >> 1) & 3;
   }
-  if (player_mode != 1) {
+  if (player_mode != PLAYER_CLIMB) {
       if (move_x == 0)
 	frame = 0;
   } else {

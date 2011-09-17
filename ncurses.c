@@ -83,7 +83,7 @@ void RenderFrame(void)
     int type;
     int n;
     int dir;
-    const int **p;
+    const char **p;
 
     for (y = 0; y < 25; y++) {
 	move(24 - y, 0);

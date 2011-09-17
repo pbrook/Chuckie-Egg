@@ -38,6 +38,8 @@ static void Do_RenderSprite(int x, int y, sprite_t *sprite, int color)
     y = y ^ 0xff;
     sx = sprite->x;
     sy = sprite->y;
+    if (y + sy > 256)
+	sy = 256 - y;
     src = sprite->data;
     dest = &pixels[x + y * 160];
 

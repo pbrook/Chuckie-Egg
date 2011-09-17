@@ -16,7 +16,6 @@ void PollKeys(void)
     int c;
     static int last_mode;
 
-    mvprintw(25, 0,"%d\n", (int)player_mode);
     if (player_mode != last_mode) {
 	if (player_mode == 0) {
 	    button_ack |= 0xc;
@@ -67,13 +66,25 @@ void PollKeys(void)
 #define ATTR_DUCK COLOR_PAIR(4) | A_BOLD
 #define ATTR_PLAYER COLOR_PAIR(1) | A_BOLD
 #define ATTR_LIFT COLOR_PAIR(1) | A_BOLD
+#define ATTR_BIG_DUCK COLOR_PAIR(1) | A_BOLD
 
 static const char *duck_left[2]   = {"<\\", "DD"};
 static const char *duck_right[2]  = {"/>", "DD"};
 static const char *duck_up[2]     = {"/\\", "DD"};
 static const char *duck_down[2]   = {"\\/", "DD"};
-static char player_top[3];
-static const char *player_bottom = "**";
+static const char *player_top = "AA";
+static const char *player_bottom = "##";
+static const char *big_duck[2][2][3] = {
+    {
+	{"_/===>", "|---| ", "\\---/ "},
+	{"_/===>", "|~~~| ", "\\---/ "}
+    }, {
+	{"<===\\_", " |---|", " \\---/"},
+	{"<===\\_", " |~~~|", " \\---/"}
+    }
+};
+
+
 
 void RenderFrame(void)
 {
@@ -142,6 +153,12 @@ void RenderFrame(void)
 	}
     }
 
+    x = big_duck_x >> 2;
+    y = 25 - (big_duck_y >> 3);
+    for (n = 0; n < 3; n++) {
+	mvaddstr(y + n, x, big_duck[big_duck_dir][big_duck_frame][n]);
+    }
+
     refresh();
 }
 
@@ -157,9 +174,6 @@ int main(int argc, const char *argv[])
     init_pair(2, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
     init_pair(4, COLOR_CYAN, COLOR_BLACK);
-
-    player_top[0] = ACS_PLUS;
-    player_top[1] = ACS_PLUS;
 
     run_game();
 

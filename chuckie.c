@@ -379,11 +379,166 @@ static void AnimatePlayer(void)
     }
 }
 
+static void PlayerGrabLadder(int want_move)
+{
+  int tmp;
+  int x;
+  int y;
+
+  tmp = (int8_t)(player_partial_x + move_x);
+  if (tmp != 3)
+      return;
+  if (want_move == 0)
+      return;
+  if (want_move > 0) {
+      x = player_tilex;
+      y = player_tiley + 1;
+      tmp = Do_ReadMap(x, y);
+      if ((tmp & 2) == 0) {
+	  if (player_partial_y >= 4)
+	    y++;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 2) == 0)
+	    return;
+      }
+      player_mode = 1;
+      tmp = player_partial_y + move_y;
+      if (tmp & 1)
+	  move_y++;
+      return;
+  }
+  x = player_tilex;
+  y = player_tiley;
+  tmp = Do_ReadMap(x, y);
+  if ((tmp & 2) == 0)
+    return;
+  x = player_tilex;
+  y = player_tiley + 1;
+  tmp = Do_ReadMap(x, y);
+  if ((tmp & 2) == 0)
+    return;
+  player_mode = 1;
+  tmp = player_partial_y + move_y;
+  if (tmp & 1)
+      move_y--;
+  return;
+}
+
+static void PlayerHitLift(void)
+{
+  int tmp;
+  int y1;
+  int y2;
+
+  if (!have_lift)
+    return;
+  tmp = (uint8_t)(lift_x - 1);
+  if (tmp >= player_x)
+    return;
+  tmp = (uint8_t)(tmp + 0x0a);
+  if (tmp < player_x)
+    return;
+  y1 = player_y - 0x11;
+  y2 = player_y - 0x13 + (int8_t)move_y;
+  tmp = lift_y[0];
+  if (tmp > y1 || tmp < y2) {
+      tmp = lift_y[1];
+      if (tmp != y1)
+	{
+	  if (tmp >= y1)
+	    return;
+	  if (tmp < y2)
+	    return;
+	}
+      if (current_lift == 0)
+	tmp++;
+  } else {
+      if (current_lift != 0)
+	tmp++;
+  }
+  tmp -= y1;
+  move_y = tmp + 1;
+  player_fall = 0;
+  player_mode = 4;
+}
+
+static void PlayerJump(void)
+{
+  int tmp;
+  int tmp2;
+  int x;
+  int y;
+  int y1;
+  int y2;
+
+  move_x = player_slide;
+  tmp2 = (int8_t)move_y;
+  tmp = player_fall >> 2;
+  if (tmp >= 6)
+    tmp = 6;
+  move_y = 2 - tmp;
+  player_fall++;
+  if (player_y == 0xdc) {
+      move_y = -1;
+      player_fall = 0x0c;
+  } else {
+      PlayerGrabLadder(tmp2);
+      if (player_mode == 1)
+	  return;
+  }
+
+  tmp = (uint8_t)(move_y + player_partial_y);
+  if (tmp == 0) {
+      x = player_tilex;
+      y = player_tiley - 1;
+      tmp = Do_ReadMap(x, y);
+      if ((tmp & 1) != 0)
+	player_mode = 0;
+  } else if ((tmp & 0x80) == 0) {
+      if (tmp == 8) {
+	  x = player_tilex;
+	  y = player_tiley;
+	  tmp = Do_ReadMap(x, y);
+	  if ((tmp & 1) != 0)
+	    player_mode = 0;
+      }
+  } else {
+      x = player_tilex;
+      y = player_tiley - 1;
+      tmp = Do_ReadMap(x, y);
+      if ((tmp & 1) != 0) {
+	  player_mode = 0;
+	  move_y = -player_partial_y;
+      }
+  }
+
+  PlayerHitLift();
+  if (player_mode == 4)
+      return;
+
+  if (MoveSideways()) {
+      move_x = -move_x;
+      player_slide = move_x;
+  }
+}
+
+static void StartPlayerJump(void)
+{
+    int tmp;
+
+    button_ack |= 0x10;
+    player_fall = 0;
+    player_mode = 2;
+    tmp = move_x;
+    player_slide = tmp;
+    if (tmp != 0)
+	player_face = tmp;
+    PlayerJump();
+}
+
 static void MovePlayer(void)
 {
   int x, y, tmp;
-  int tmp2;
-  int y1, y2;
 
   move_x = 0;
   move_y = 0;
@@ -402,122 +557,7 @@ static void MovePlayer(void)
   move_y <<= 1;
   switch (player_mode) {
   case 2: /* Jump */
-do_jump:
-      move_x = player_slide;
-      tmp2 = move_y;
-      tmp = player_fall >> 2;
-      if (tmp >= 6)
-	tmp = 6;
-      tmp ^= 0xff;
-      tmp += 3;
-      move_y = tmp;
-      player_fall++;
-      if (player_y == 0xdc) {
-	  move_y = 0xff;
-	  player_fall = 0x0c;
-	  goto label_2062;
-      }
-      tmp = (int8_t)(player_partial_x + move_x);
-      if (tmp != 3)
-	  goto label_2016;
-      if (tmp2 == 0)
-	goto label_2016;
-      /* Grab lader */
-      if ((tmp2 & 0x80) == 0) {
-	  x = player_tilex;
-	  y = player_tiley + 1;
-	  tmp = Do_ReadMap(x, y);
-	  if ((tmp & 2) == 0) {
-	      if (player_partial_y >= 4)
-		y++;
-	      tmp = Do_ReadMap(x, y);
-	      if ((tmp & 2) == 0)
-		goto label_2016;
-	  }
-	  player_mode = 1;
-	  tmp = player_partial_y + move_y;
-	  if (tmp & 1)
-	      move_y++;
-	  goto label_20cd;
-      }
-      x = player_tilex;
-      y = player_tiley;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 2) == 0)
-	goto label_2016;
-      x = player_tilex;
-      y = player_tiley + 1;
-      tmp = Do_ReadMap(x, y);
-      if ((tmp & 2) == 0)
-	goto label_2016;
-      player_mode = 1;
-      tmp = player_partial_y + move_y;
-      if (tmp & 1)
-	  move_y--;
-      goto label_20cd;
-label_2016:
-      tmp = (uint8_t)(move_y + player_partial_y);
-      if (tmp == 0) {
-	  x = player_tilex;
-	  y = player_tiley - 1;
-	  tmp = Do_ReadMap(x, y);
-	  if ((tmp & 1) != 0)
-	    player_mode = 0;
-      } else if ((tmp & 0x80) == 0) {
-	  if (tmp != 8)
-	    goto label_2062;
-	  x = player_tilex;
-	  y = player_tiley;
-	  tmp = Do_ReadMap(x, y);
-	  if ((tmp & 1) != 0)
-	    player_mode = 0;
-      } else {
-	  x = player_tilex;
-	  y = player_tiley - 1;
-	  tmp = Do_ReadMap(x, y);
-	  if ((tmp & 1) != 0) {
-	      player_mode = 0;
-	      move_y = -player_partial_y;
-	  }
-      }
-label_2062:
-      if (!have_lift)
-	goto label_20bf;
-      tmp = (uint8_t)(lift_x - 1);
-      if (tmp >= player_x)
-	goto label_20bf;
-      tmp = (uint8_t)(tmp + 0x0a);
-      if (tmp < player_x)
-	goto label_20bf;
-      y1 = player_y - 0x11;
-      y2 = player_y - 0x13 + (int8_t)move_y;
-      tmp = lift_y[0];
-      if (tmp > y1 || tmp < y2) {
-	  tmp = lift_y[1];
-	  if (tmp != y1)
-	    {
-	      if (tmp >= y1)
-		goto label_20bf;
-	      if (tmp < y2)
-		goto label_20bf;
-	    }
-	  if (current_lift == 0)
-	    tmp++;
-      } else {
-	  if (current_lift != 0)
-	    tmp++;
-      }
-      tmp -= y1;
-      move_y = tmp + 1;
-      player_fall = 0;
-      player_mode = 4;
-      goto label_20cd;
-label_20bf:
-      if (MoveSideways()) {
-	  move_x = -move_x;
-	  player_slide = move_x;
-      }
-label_20cd:
+      PlayerJump();
       break;
   case 3: /* Fall */
       player_fall++;
@@ -550,18 +590,20 @@ label_20cd:
       }
       break;
   case 1: /* Climb */
-      if ((buttons & 0x10) != 0)
-	goto start_jump;
+      if ((buttons & 0x10) != 0) {
+	  StartPlayerJump();
+	  break;
+      }
       if (move_x != 0 && player_partial_y == 0) {
 	  x = player_tilex;
 	  y = player_tiley - 1;
 	  tmp = Do_ReadMap(x, y);
-	  if ((tmp & 1) == 0)
-	      goto do_climb;
-	  move_y = 0;
-	  player_mode = 0;
-      } else {
-do_climb:
+	  if ((tmp & 1) != 0) {
+	      move_y = 0;
+	      player_mode = 0;
+	  }
+      }
+      if (player_mode != 0) {
 	  move_x = 0;
 	  if (move_y != 0 && player_partial_y == 0) {
 	      if ((move_y & 0x80) == 0) {
@@ -582,8 +624,10 @@ do_climb:
       player_face = 0;
       break;
   case 4: /* On lift */
-      if ((buttons & 0x10) != 0)
-	goto start_jump;
+      if ((buttons & 0x10) != 0) {
+	  StartPlayerJump();
+	  break;
+      }
       if (lift_x - 1 >= player_x || lift_x + 9 < player_x) {
 	  player_fall = 0;
 	  player_slide = 0;
@@ -601,15 +645,8 @@ do_climb:
   case 0:
       /* Walk */
       if (buttons & 0x10) {
-start_jump:
-	  button_ack |= 0x10;
-	  player_fall = 0;
-	  player_mode = 2;
-	  tmp = move_x;
-	  player_slide = tmp;
-	  if (tmp != 0)
-	    player_face = tmp;
-	  goto do_jump;
+	  StartPlayerJump();
+	  break;
       }
       if (move_y) {
 	  if (player_partial_x == 3) {
@@ -671,36 +708,31 @@ static void MakeSound(void)
     return;
   if ((duck_timer & 1) != 0)
     return;
-  tmp = player_mode;
-  if (tmp == 0) {
+  switch (player_mode) {
+  case 0:
       tmp = 64;
-      goto label_0c8b;
-  }
-  if (tmp == 1) {
+      break;
+  case 1:
       tmp = 96;
-      goto label_0c8b;
+      break;
+  case 2:
+      tmp = player_fall;
+      if (tmp >= 0x0b) {
+	  tmp = (uint8_t)(0xbe - (player_fall * 2));
+      } else {
+	  tmp = (uint8_t)(0x96 + (player_fall * 2));
+      }
+      break;
+  case 3:
+      tmp = (uint8_t)(0x6e - (player_fall * 2));
+      break;
+  case 4:
+      if (move_x == 0)
+	return;
+      tmp = 0x64;
+      break;
   }
-  if (tmp != 2) /*0x0c5a */
-    goto label_0c76;
-  tmp = player_fall;
-  if (tmp >= 0x0b) {
-      tmp = (uint8_t)(0xbe - (player_fall * 2));
-      goto label_0c8b;
-  }
-  tmp = (uint8_t)(0x96 + (player_fall * 2));
-  goto label_0c8b;
-label_0c76:
-  if (tmp == 3) {
-    tmp = (uint8_t)(0x6e - (player_fall * 2));
-    goto label_0c8b;
-  }
-  if (move_x == 0)
-    return;
-  tmp = 0x64;
-label_0c8b:
-  /* BEEP(tmp) */
   beep(tmp);
-  while(0);
 }
 
 /* MoveLift */

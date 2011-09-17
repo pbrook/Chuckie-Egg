@@ -1,5 +1,5 @@
-#include <stdint.h>
-#include "data.h"
+#include "config.h"
+#include "spritedata.h"
 
 sprite_t SPRITE_WALL = {
     8, 8, /* 1200 */

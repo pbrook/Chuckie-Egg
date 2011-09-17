@@ -15,6 +15,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -32,7 +33,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = chuckie$(EXEEXT)
+bin_PROGRAMS = chuckie$(EXEEXT) aachuckie$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -48,14 +49,27 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+LIBRARIES = $(noinst_LIBRARIES)
+AR = ar
+ARFLAGS = cru
+libchuckie_a_AR = $(AR) $(ARFLAGS)
+libchuckie_a_LIBADD =
+am_libchuckie_a_OBJECTS = chuckie.$(OBJEXT) leveldata.$(OBJEXT) \
+	audio.$(OBJEXT)
+libchuckie_a_OBJECTS = $(am_libchuckie_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_chuckie_OBJECTS = chuckie.$(OBJEXT) spritedata.$(OBJEXT) \
-	leveldata.$(OBJEXT) sdl.$(OBJEXT) audio.$(OBJEXT) \
-	audio-sdl.$(OBJEXT)
+am_aachuckie_OBJECTS = ncurses.$(OBJEXT)
+aachuckie_OBJECTS = $(am_aachuckie_OBJECTS)
+aachuckie_DEPENDENCIES = libchuckie.a
+am_chuckie_OBJECTS = chuckie-spritedata.$(OBJEXT) \
+	chuckie-sdl.$(OBJEXT) chuckie-audio-sdl.$(OBJEXT) \
+	chuckie-raster_4bit.$(OBJEXT)
 chuckie_OBJECTS = $(am_chuckie_OBJECTS)
 am__DEPENDENCIES_1 =
-chuckie_DEPENDENCIES = $(am__DEPENDENCIES_1)
+chuckie_DEPENDENCIES = $(am__DEPENDENCIES_1) libchuckie.a
+chuckie_LINK = $(CCLD) $(chuckie_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -64,8 +78,10 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(chuckie_SOURCES)
-DIST_SOURCES = $(chuckie_SOURCES)
+SOURCES = $(libchuckie_a_SOURCES) $(aachuckie_SOURCES) \
+	$(chuckie_SOURCES)
+DIST_SOURCES = $(libchuckie_a_SOURCES) $(aachuckie_SOURCES) \
+	$(chuckie_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -117,6 +133,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+RANLIB = @RANLIB@
 SDL_CFLAGS = @SDL_CFLAGS@
 SDL_CONFIG = @SDL_CONFIG@
 SDL_LIBS = @SDL_LIBS@
@@ -166,9 +183,16 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-chuckie_SOURCES = chuckie.c spritedata.c leveldata.c sdl.c audio.c audio-sdl.c
-chuckie_LDADD = $(SDL_LIBS)
-AM_CFLAGS = $(SDL_CFLAGS) -Wall
+AM_CFLAGS = -Wall
+noinst_LIBRARIES = libchuckie.a
+libchuckie_a_SOURCES = chuckie.c leveldata.c audio.c
+chuckie_SOURCES = spritedata.c sdl.c audio-sdl.c \
+		  raster_4bit.c
+
+chuckie_LDADD = $(SDL_LIBS) libchuckie.a
+chuckie_CFLAGS = $(SDL_CFLAGS)
+aachuckie_SOURCES = ncurses.c
+aachuckie_LDADD = libchuckie.a -lcurses
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -225,6 +249,13 @@ $(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
+
+clean-noinstLIBRARIES:
+	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+libchuckie.a: $(libchuckie_a_OBJECTS) $(libchuckie_a_DEPENDENCIES) 
+	-rm -f libchuckie.a
+	$(libchuckie_a_AR) libchuckie.a $(libchuckie_a_OBJECTS) $(libchuckie_a_LIBADD)
+	$(RANLIB) libchuckie.a
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -262,9 +293,12 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+aachuckie$(EXEEXT): $(aachuckie_OBJECTS) $(aachuckie_DEPENDENCIES) 
+	@rm -f aachuckie$(EXEEXT)
+	$(LINK) $(aachuckie_OBJECTS) $(aachuckie_LDADD) $(LIBS)
 chuckie$(EXEEXT): $(chuckie_OBJECTS) $(chuckie_DEPENDENCIES) 
 	@rm -f chuckie$(EXEEXT)
-	$(LINK) $(chuckie_OBJECTS) $(chuckie_LDADD) $(LIBS)
+	$(chuckie_LINK) $(chuckie_OBJECTS) $(chuckie_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -272,12 +306,14 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio-sdl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-audio-sdl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-raster_4bit.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-sdl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-spritedata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/leveldata.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sdl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spritedata.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ncurses.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -292,6 +328,62 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+chuckie-spritedata.o: spritedata.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-spritedata.o -MD -MP -MF $(DEPDIR)/chuckie-spritedata.Tpo -c -o chuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-spritedata.Tpo $(DEPDIR)/chuckie-spritedata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='spritedata.c' object='chuckie-spritedata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c
+
+chuckie-spritedata.obj: spritedata.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-spritedata.obj -MD -MP -MF $(DEPDIR)/chuckie-spritedata.Tpo -c -o chuckie-spritedata.obj `if test -f 'spritedata.c'; then $(CYGPATH_W) 'spritedata.c'; else $(CYGPATH_W) '$(srcdir)/spritedata.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-spritedata.Tpo $(DEPDIR)/chuckie-spritedata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='spritedata.c' object='chuckie-spritedata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-spritedata.obj `if test -f 'spritedata.c'; then $(CYGPATH_W) 'spritedata.c'; else $(CYGPATH_W) '$(srcdir)/spritedata.c'; fi`
+
+chuckie-sdl.o: sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-sdl.o -MD -MP -MF $(DEPDIR)/chuckie-sdl.Tpo -c -o chuckie-sdl.o `test -f 'sdl.c' || echo '$(srcdir)/'`sdl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-sdl.Tpo $(DEPDIR)/chuckie-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl.c' object='chuckie-sdl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-sdl.o `test -f 'sdl.c' || echo '$(srcdir)/'`sdl.c
+
+chuckie-sdl.obj: sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-sdl.obj -MD -MP -MF $(DEPDIR)/chuckie-sdl.Tpo -c -o chuckie-sdl.obj `if test -f 'sdl.c'; then $(CYGPATH_W) 'sdl.c'; else $(CYGPATH_W) '$(srcdir)/sdl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-sdl.Tpo $(DEPDIR)/chuckie-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl.c' object='chuckie-sdl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-sdl.obj `if test -f 'sdl.c'; then $(CYGPATH_W) 'sdl.c'; else $(CYGPATH_W) '$(srcdir)/sdl.c'; fi`
+
+chuckie-audio-sdl.o: audio-sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-audio-sdl.o -MD -MP -MF $(DEPDIR)/chuckie-audio-sdl.Tpo -c -o chuckie-audio-sdl.o `test -f 'audio-sdl.c' || echo '$(srcdir)/'`audio-sdl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-audio-sdl.Tpo $(DEPDIR)/chuckie-audio-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-sdl.c' object='chuckie-audio-sdl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-audio-sdl.o `test -f 'audio-sdl.c' || echo '$(srcdir)/'`audio-sdl.c
+
+chuckie-audio-sdl.obj: audio-sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-audio-sdl.obj -MD -MP -MF $(DEPDIR)/chuckie-audio-sdl.Tpo -c -o chuckie-audio-sdl.obj `if test -f 'audio-sdl.c'; then $(CYGPATH_W) 'audio-sdl.c'; else $(CYGPATH_W) '$(srcdir)/audio-sdl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-audio-sdl.Tpo $(DEPDIR)/chuckie-audio-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-sdl.c' object='chuckie-audio-sdl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-audio-sdl.obj `if test -f 'audio-sdl.c'; then $(CYGPATH_W) 'audio-sdl.c'; else $(CYGPATH_W) '$(srcdir)/audio-sdl.c'; fi`
+
+chuckie-raster_4bit.o: raster_4bit.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-raster_4bit.o -MD -MP -MF $(DEPDIR)/chuckie-raster_4bit.Tpo -c -o chuckie-raster_4bit.o `test -f 'raster_4bit.c' || echo '$(srcdir)/'`raster_4bit.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-raster_4bit.Tpo $(DEPDIR)/chuckie-raster_4bit.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='raster_4bit.c' object='chuckie-raster_4bit.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-raster_4bit.o `test -f 'raster_4bit.c' || echo '$(srcdir)/'`raster_4bit.c
+
+chuckie-raster_4bit.obj: raster_4bit.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-raster_4bit.obj -MD -MP -MF $(DEPDIR)/chuckie-raster_4bit.Tpo -c -o chuckie-raster_4bit.obj `if test -f 'raster_4bit.c'; then $(CYGPATH_W) 'raster_4bit.c'; else $(CYGPATH_W) '$(srcdir)/raster_4bit.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-raster_4bit.Tpo $(DEPDIR)/chuckie-raster_4bit.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='raster_4bit.c' object='chuckie-raster_4bit.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-raster_4bit.obj `if test -f 'raster_4bit.c'; then $(CYGPATH_W) 'raster_4bit.c'; else $(CYGPATH_W) '$(srcdir)/raster_4bit.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -494,7 +586,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) config.h
+all-am: Makefile $(LIBRARIES) $(PROGRAMS) config.h
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -526,7 +618,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-noinstLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -599,20 +692,20 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: all install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
-	clean-binPROGRAMS clean-generic ctags dist dist-all dist-bzip2 \
-	dist-gzip dist-lzma dist-shar dist-tarZ dist-xz dist-zip \
-	distcheck distclean distclean-compile distclean-generic \
-	distclean-hdr distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS
+	clean-binPROGRAMS clean-generic clean-noinstLIBRARIES ctags \
+	dist dist-all dist-bzip2 dist-gzip dist-lzma dist-shar \
+	dist-tarZ dist-xz dist-zip distcheck distclean \
+	distclean-compile distclean-generic distclean-hdr \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS
 
 
 pnd: chuckie-egg.pnd

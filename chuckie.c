@@ -2,30 +2,15 @@
    Written by Paul Brook
    Released under the GNU GPL v3.  */
 
-#include "config.h"
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "chuckie.h"
-#include "data.h"
+#include "raster.h"
 
 #define NUM_PLAYERS 1
-
-#define COLOR_YELLOW	1
-#define COLOR_PURPLE	2
-#define COLOR_GREEN	3
-#define PLANE_YELLOW	4
-#define PLANE_BLUE	8
-
-#define COLOR_HUD	COLOR_PURPLE
-#define COLOR_WALL	COLOR_GREEN
-#define COLOR_LIFT	COLOR_YELLOW
-#define COLOR_EGG	COLOR_YELLOW
-#define COLOR_LADDER	COLOR_PURPLE
-#define COLOR_GRAIN	COLOR_PURPLE
 
 int cheat;
 int is_dead;
@@ -39,8 +24,7 @@ int eggs_left;
 int bonus_hold;
 int have_lift;
 uint8_t lift_x;
-uint8_t lift_y1;
-uint8_t lift_y2;
+uint8_t lift_y[2];
 uint8_t current_lift;
 int have_big_duck;
 int duck_timer;
@@ -55,10 +39,8 @@ int current_duck;
 int duck_speed;
 uint8_t bonus[4];
 uint8_t timer_ticks[3];
-uint8_t lives[4];
 uint8_t level[4];
-uint8_t levelmap[0x200];
-sprite_t *player_sprite;
+uint8_t levelmap[20 * 25];
 /* 0 = Walking, 1 = Climbing, 2 = Jumping, 3 = Falling, 4 = Lift */
 uint8_t player_mode;
 uint8_t player_fall;
@@ -73,146 +55,14 @@ uint8_t player_partial_y;
 uint8_t move_x;
 uint8_t move_y;
 uint8_t buttons;
+uint8_t button_ack;
 uint32_t rand_high;
 uint8_t rand_low;
-
-/* Direction bitflags  */
-#define DIR_L		1
-#define DIR_R		2
-#define DIR_UP		4
-#define DIR_DOWN	8
-#define DIR_HORIZ	(DIR_R | DIR_L)
-
-typedef struct {
-    uint8_t score[8];
-    uint8_t bonus[4];
-    uint8_t egg[16];
-    uint8_t grain[16];
-} playerdata_t;
 
 playerdata_t all_player_data[4];
 #define player_data (&all_player_data[current_player])
 
-typedef enum {
-    DUCK_BORED,
-    DUCK_STEP,
-    DUCK_EAT1,
-    DUCK_EAT2,
-    DUCK_EAT3,
-    DUCK_EAT4
-} duck_state;
-
-typedef struct {
-    uint8_t x;
-    uint8_t y;
-    uint8_t tile_x;
-    uint8_t tile_y;
-    duck_state mode;
-    uint8_t dir;
-} duckinfo_t;
 duckinfo_t duck[5];
-
-uint8_t pixels[160 * 256];
-
-static void Do_RenderSprite(int x, int y, sprite_t *sprite, int color)
-{
-    const uint8_t *src;
-    uint8_t srcbits;
-    int bits;
-    int sx;
-    int sy;
-    int i;
-    uint8_t *dest;
-
-    y = y ^ 0xff;
-    sx = sprite->x;
-    sy = sprite->y;
-    src = sprite->data;
-    dest = &pixels[x + y * 160];
-
-    bits = 0;
-
-    while (sy--) {
-	for (i = 0; i < sx; i++) {
-	    if (bits == 0) {
-		srcbits = *(src++);
-		bits = 8;
-	    }
-	    if (srcbits & 0x80) {
-		*dest ^= color;
-	    }
-	    srcbits <<= 1;
-	    bits--;
-	    dest++;
-	}
-	dest += 160 - sx;
-    }
-}
-
-static void Do_RenderDigit(int x, int y, int n)
-{
-    Do_RenderSprite(x, y, &sprite_digit[n], COLOR_HUD);
-}
-
-static void DrawLives(int player)
-{
-  int x = 0x1b + 0x22 * player;
-  int i;
-
-  for (i = 0; i < 6; i++) {
-      Do_RenderDigit(x + 1 + i * 5, 0xf7, all_player_data[player].score[i + 2]);
-  }
-
-  i = lives[player];
-  if (i > 8)
-    i = 8;
-  while (i--) {
-    Do_RenderSprite(x, 0xee, &SPRITE_HAT, PLANE_YELLOW);
-    x += 4;
-  }
-}
-
-
-static void DrawHUD(void)
-{
-  int tmp;
-
-  Do_RenderSprite(0, 0xf8, &SPRITE_SCORE, COLOR_HUD);
-  tmp = current_player * 0x22 + 0x1b;
-  Do_RenderSprite(tmp, 0xf8, &SPRITE_BLANK, COLOR_HUD);
-  for (tmp = 0; tmp < num_players; tmp++) {
-      DrawLives(tmp);
-  }
-  Do_RenderSprite(0, 0xe8, &SPRITE_PLAYER, COLOR_HUD);
-  Do_RenderSprite(0x1b, 0xe7, &sprite_digit[current_player + 1], 2);
-  Do_RenderSprite(0x24, 0xe8, &SPRITE_LEVEL, COLOR_HUD);
-
-  tmp = current_level + 1;
-  Do_RenderDigit(0x45, 0xe7, tmp % 10);
-  tmp /= 10;
-  Do_RenderDigit(0x40, 0xe7, tmp % 10);
-  if (tmp > 10)
-    Do_RenderDigit(0x3b, 0xe7, tmp / 10);
-
-  Do_RenderSprite(0x4e, 0xe8, &SPRITE_BONUS, COLOR_HUD);
-
-  Do_RenderDigit(0x66, 0xe7, bonus[0]);
-  Do_RenderDigit(0x6b, 0xe7, bonus[1]);
-  Do_RenderDigit(0x70, 0xe7, bonus[2]);
-  Do_RenderDigit(0x75, 0xe7, 0);
-  Do_RenderSprite(0x7e, 0xe8, &SPRITE_TIME, COLOR_HUD);
-
-  tmp = current_level >> 4;
-  if (tmp > 8) tmp = 8;
-  tmp ^= 0xff;
-  tmp = (tmp + 10) & 0xff;
-  timer_ticks[0] = tmp;
-  Do_RenderDigit(0x91, 0xe7, tmp);
-  timer_ticks[1] = 0;
-  Do_RenderDigit(0x96, 0xe7, 0);
-  timer_ticks[2] = 0;
-  Do_RenderDigit(0x9b, 0xe7, 0);
-}
 
 /* Duck code generates out of bounds reads.  */
 static int Do_ReadMap(uint8_t x, uint8_t y)
@@ -223,10 +73,18 @@ static int Do_ReadMap(uint8_t x, uint8_t y)
   return levelmap[x + y * 20];
 }
 
-static void Do_InitTile(int x, int y, sprite_t *sprite, int n, int color)
+static void Do_InitTile(int x, int y, int type)
 {
-    levelmap[y * 20 + x] = n;
-    Do_RenderSprite(x << 3, (y << 3) | 7, sprite, color);
+    int old_type;
+
+    old_type = levelmap[y * 20 + x];
+    levelmap[y * 20 + x] = type;
+    if (raster) {
+	if (old_type)
+	    raster->draw_tile(x, y, old_type);
+	if (type)
+	    raster->draw_tile(x, y, type);
+    }
 }
 
 static void LoadLevel(void)
@@ -240,7 +98,17 @@ static void LoadLevel(void)
     int num_grain;
     const uint8_t *p;
 
-    DrawHUD();
+    i = current_level >> 4;
+    if (i > 8)
+	i = 8;
+    i ^= 0xff;
+    i = (i + 10) & 0xff;
+    timer_ticks[0] = i;
+    timer_ticks[1] = 0;
+    timer_ticks[2] = 0;
+
+    if (raster)
+	raster->draw_hud();
 
     p = levels[current_level & 7];
     num_walls = *(p++);
@@ -256,7 +124,7 @@ static void LoadLevel(void)
 	x = *(p++);
 	i = *(p++);
 	while (x <= i) {
-	    Do_InitTile(x, y, &SPRITE_WALL, 1, COLOR_WALL);
+	    Do_InitTile(x, y, TILE_WALL);
 	    x++;
 	}
     }
@@ -267,9 +135,7 @@ static void LoadLevel(void)
 	i = *(p++);
 	while (y <= i) {
 	    tmp = levelmap[x + y * 20];
-	    if (tmp)
-		Do_RenderSprite(x << 3, (y << 3) | 7, &SPRITE_WALL, COLOR_WALL);
-	    Do_InitTile(x, y, &SPRITE_LADDER, tmp | 2, COLOR_LADDER);
+	    Do_InitTile(x, y, TILE_LADDER | tmp);
 	    y++;
 	}
     }
@@ -283,7 +149,7 @@ static void LoadLevel(void)
 	x = *(p++);
 	y = *(p++);
 	if (player_data->egg[i] == 0) {
-	    Do_InitTile(x, y, &SPRITE_EGG, (i << 4) | 4, COLOR_EGG);
+	    Do_InitTile(x, y, (i << 4) | TILE_EGG);
 	    eggs_left++;
 	}
     }
@@ -292,12 +158,12 @@ static void LoadLevel(void)
 	x = *(p++);
 	y = *(p++);
 	if (player_data->grain[i] == 0) {
-	    Do_InitTile(x, y, &SPRITE_GRAIN, (i << 4) | 8, COLOR_GRAIN);
+	    Do_InitTile(x, y, (i << 4) | TILE_GRAIN);
 	}
     }
 
-    Do_RenderSprite(0, 0xdc, have_big_duck ? &SPRITE_CAGE_OPEN
-					   : &SPRITE_CAGE_CLOSED, PLANE_YELLOW);
+    if (raster)
+	raster->draw_cage ();
 
     for (i = 0; i < 5 ; i++) {
 	duck[i].tile_x = *(p++);
@@ -305,121 +171,31 @@ static void LoadLevel(void)
     }
 }
 
-static void DrawBigDuck(void)
-{
-  sprite_t *sprite;
-  if (big_duck_dir) {
-      sprite = big_duck_frame ? &SPRITE_BIGDUCK_L2 : &SPRITE_BIGDUCK_L1;
-  } else {
-      sprite = big_duck_frame ? &SPRITE_BIGDUCK_R2 : &SPRITE_BIGDUCK_R1;
-  }
-  Do_RenderSprite(big_duck_x, big_duck_y, sprite, PLANE_YELLOW);
-}
-
-static void DrawDuck(int n)
-{
-  int x;
-  int dir;
-  sprite_t *sprite;
-
-  x = duck[n].x;
-  dir = duck[n].dir;
-  switch (duck[n].mode) {
-  case DUCK_BORED:
-      if (dir & DIR_HORIZ) {
-	  sprite = (dir == DIR_R) ? &SPRITE_DUCK_R : &SPRITE_DUCK_L;
-      } else {
-	  sprite = &SPRITE_DUCK_UP;
-      }
-      break;
-  case DUCK_STEP:
-      if (dir & DIR_HORIZ) {
-	  sprite = (dir == DIR_R) ? &SPRITE_DUCK_R2 : &SPRITE_DUCK_L2;
-      } else {
-	  sprite = &SPRITE_DUCK_UP2;
-      }
-      break;
-  case DUCK_EAT2:
-  case DUCK_EAT4:
-      if (dir == DIR_R) {
-	 sprite = &SPRITE_DUCK_EAT_R;
-      } else {
-	 sprite = &SPRITE_DUCK_EAT_L;
-	 x -= 8;
-      }
-      break;
-  case DUCK_EAT3:
-      if (dir == DIR_R) {
-	 sprite = &SPRITE_DUCK_EAT_R2;
-      } else {
-	 sprite = &SPRITE_DUCK_EAT_L2;
-	 x -= 8;
-      }
-      break;
-  default:
-      abort();
-  };
-
-  Do_RenderSprite(x, duck[n].y, sprite, PLANE_BLUE);
-}
-
-static void ErasePlayer(void)
-{
-  Do_RenderSprite(player_x, player_y, player_sprite, PLANE_YELLOW);
-}
-
-static void DrawPlayer(void)
-{
-  sprite_t *const *ps;
-  int frame;
-
-  if (player_face == 0) {
-      ps = sprite_player_up;
-      frame = player_partial_y >> 1;
-  } else {
-      if ((player_face & 0x80) != 0)
-	ps = sprite_player_l;
-      else
-	ps = sprite_player_r;
-      frame = player_partial_x >> 1;
-  }
-  if (player_mode != 1) {
-      if (move_x == 0)
-	frame = 0;
-  } else {
-      if (move_y == 0)
-	frame = 0;
-  }
-  player_sprite = ps[frame];
-  Do_RenderSprite(player_x, player_y, player_sprite, PLANE_YELLOW);
-}
-
 static void DrawLastLife(void)
 {
-  int tmp;
-  tmp = lives[current_player];
-  if (tmp >= 9)
-      return;
-  tmp = (tmp << 2) + (current_player * 0x22) + 0xd + 0xa;
-  Do_RenderSprite(tmp, 0xee, &SPRITE_HAT, 4);
+  if (raster)
+    raster->draw_life(player_data->lives);
 }
 
 static void StartLevel(void)
 {
   int i;
   if (have_lift) {
-      lift_y1 = 8;
-      lift_y2 = 0x5a;
+      lift_y[0] = 8;
+      lift_y[1] = 0x5a;
       current_lift = 0;
-      Do_RenderSprite(lift_x, lift_y1, &SPRITE_LIFT, COLOR_LIFT);
-      Do_RenderSprite(lift_x, lift_y2, &SPRITE_LIFT, COLOR_LIFT);
+      if (raster) {
+	  raster->draw_lift(lift_x, lift_y[0]);
+	  raster->draw_lift(lift_x, lift_y[1]);
+      }
   }
   big_duck_x = 4;
   big_duck_y = 0xcc;
   big_duck_dx = big_duck_dy = 0;
   big_duck_frame = 0;
   big_duck_dir = 0;
-  DrawBigDuck();
+  if (raster)
+      raster->draw_big_duck();
   if ((current_level >> 3) == 1) {
       num_ducks = 0;
   }
@@ -431,18 +207,21 @@ static void StartLevel(void)
       duck[i].y = (duck[i].tile_y << 3) + 0x14;
       duck[i].mode = DUCK_BORED;
       duck[i].dir = 2;
-      DrawDuck(i);
+      if (raster)
+	  raster->draw_duck(i);
   }
   /* Delay(3) */
   player_x = 0x3c;
   player_y = 0x20;
-  DrawPlayer();
+  if (raster)
+      raster->draw_player();
   player_tilex = 7;
   player_tiley = 2;
   player_partial_x = 7;
   player_partial_y = 0;
   player_mode = 0;
   player_face = 1;
+  button_ack = 0x1f;
   DrawLastLife();
 }
 
@@ -501,18 +280,14 @@ static int MoveSideways(void)
 
 static void RemoveGrain(int x, int y)
 {
-  Do_InitTile(x, y, &SPRITE_GRAIN, 0, COLOR_GRAIN);
+  Do_InitTile(x, y, 0);
 }
 
 static void ScoreChange(int n, int oldval, int newval)
 {
-    int x;
     player_data->score[n] = newval;
-    if (n < 2)
-	return;
-    x = (current_player * 0x22) + 0x12 + n * 5;;
-    Do_RenderDigit(x, 0xf7, oldval);
-    Do_RenderDigit(x, 0xf7, newval);
+    if (raster)
+	raster->draw_score(n, oldval, newval);
 }
 
 static void AddScore(int n, int val)
@@ -555,7 +330,8 @@ static void AnimatePlayer(void)
     int tmp;
     int x, y;
 
-    ErasePlayer();
+    if (raster)
+	raster->erase_player();
     player_x += move_x;
     tmp = (int8_t)(player_partial_x + move_x);
     if (tmp < 0)
@@ -570,7 +346,8 @@ static void AnimatePlayer(void)
     if (tmp >= 8)
       player_tiley++;
     player_partial_y = tmp & 7;
-    DrawPlayer();
+    if (raster)
+	raster->draw_player();
     x = player_tilex;
     y = player_tiley;
     if (player_partial_y >= 4)
@@ -585,7 +362,7 @@ static void AnimatePlayer(void)
 	squidge(6);
 	tmp >>= 4;
 	player_data->egg[tmp]--;
-	Do_InitTile(x, y, &SPRITE_EGG, 0, COLOR_EGG);
+	Do_InitTile(x, y, 0);
 	tmp = (current_level >> 2) + 1;
 	if (tmp >= 10)
 	  tmp = 10;
@@ -714,9 +491,9 @@ label_2062:
 	goto label_20bf;
       y1 = player_y - 0x11;
       y2 = player_y - 0x13 + (int8_t)move_y;
-      tmp = lift_y1;
+      tmp = lift_y[0];
       if (tmp > y1 || tmp < y2) {
-	  tmp = lift_y2;
+	  tmp = lift_y[1];
 	  if (tmp != y1)
 	    {
 	      if (tmp >= y1)
@@ -825,6 +602,7 @@ do_climb:
       /* Walk */
       if (buttons & 0x10) {
 start_jump:
+	  button_ack |= 0x10;
 	  player_fall = 0;
 	  player_mode = 2;
 	  tmp = move_x;
@@ -932,21 +710,16 @@ static void MoveLift(void)
 
   if (!have_lift)
     return;
-  if (current_lift == 0)
-    y = lift_y1;
-  else
-    y = lift_y2;
-  Do_RenderSprite(lift_x, y, &SPRITE_LIFT, COLOR_LIFT);
+  y = lift_y[current_lift];
+  if (raster)
+      raster->draw_lift(lift_x, y);
   y += 2;
   if (y == 0xe0)
     y = 6;
-  Do_RenderSprite(lift_x, y, &SPRITE_LIFT, COLOR_LIFT);
-  if (current_lift == 0) {
-      lift_y1 = y;
-  } else {
-      lift_y2 = y;
-  }
-  current_lift = !current_lift;
+  lift_y[current_lift] = y;
+  if (raster)
+      raster->draw_lift(lift_x, y);
+  current_lift = 1 - current_lift;
 }
 
 static int popcount(int val)
@@ -963,16 +736,6 @@ static void FrobRandom(void)
   rand_low = (rand_low << 1) | ((rand_high >> 24) & 1);
 }
 
-static void DrawTimer(int n)
-{
-  Do_RenderDigit(0x91 + n * 5, 0xe7, timer_ticks[n]);
-}
-
-static void DrawBonus(int n)
-{
-  Do_RenderDigit(0x66 + n * 5, 0xe7, bonus[n]);
-}
-
 static void ReduceBonus(void)
 {
   int n;
@@ -980,13 +743,15 @@ static void ReduceBonus(void)
 
   n = 2;
   do {
-      DrawBonus(n);
+      if (raster)
+	  raster->draw_bonus(n);
       bonus[n]--;
       flag = ((bonus[n] & 0x80) != 0);
       if (flag) {
 	  bonus[n] = 9;
       }
-      DrawBonus(n);
+      if (raster)
+	  raster->draw_bonus(n);
       n--;
   } while (flag);
   if (bonus[0] + bonus[1] + bonus[2] == 0)
@@ -1007,7 +772,8 @@ static void MoveDucks(void)
   if (duck_timer == 8) {
       /* Big Duck.  */
       duck_timer = 0;
-      DrawBigDuck();
+      if (raster)
+	  raster->draw_big_duck();
       if (have_big_duck) {
 	  tmp = (uint8_t)(big_duck_x + 4);
 	  if (tmp < player_x) {
@@ -1037,7 +803,8 @@ static void MoveDucks(void)
       big_duck_x += big_duck_dx;
       big_duck_y += big_duck_dy;
       big_duck_frame ^= 1;
-      DrawBigDuck();
+      if (raster)
+	  raster->draw_big_duck();
       return;
   }
   if (duck_timer == 4) {
@@ -1048,16 +815,19 @@ static void MoveDucks(void)
       }
       x = 2;
       do {
-	  DrawTimer(x);
+	  if (raster)
+	      raster->draw_timer(x);
 	  timer_ticks[x]--;
 	  flag = (timer_ticks[x] & 0x80) != 0;
 	  if (flag)
 	    timer_ticks[x] = 9;
-	  DrawTimer(x);
+	  if (raster)
+	      raster->draw_timer(x);
 	  x--;
       } while (flag);
       tmp = (uint8_t)(timer_ticks[0] + timer_ticks[1] + timer_ticks[2]);
       if (tmp == 0) {
+	  abort();
 	  is_dead++;
 	  return;
       }
@@ -1075,7 +845,8 @@ static void MoveDucks(void)
     current_duck--;
   if (current_duck >= num_ducks)
     return;
-  DrawDuck(current_duck);
+  if (raster)
+      raster->draw_duck(current_duck);
   /* Move little duck.  */
   this_duck = &duck[current_duck];
   if (this_duck->mode >= DUCK_EAT1) {
@@ -1144,7 +915,8 @@ static void MoveDucks(void)
 	this_duck->mode = DUCK_BORED;
       else
 	this_duck->mode++;
-      DrawDuck(current_duck);
+      if (raster)
+	  raster->draw_duck(current_duck);
       return;
   }
   /* Walking.  */
@@ -1175,7 +947,8 @@ static void MoveDucks(void)
   default:
       abort();
   }
-  DrawDuck(current_duck);
+  if (raster)
+      raster->draw_duck(current_duck);
   return;
 }
 
@@ -1185,7 +958,7 @@ static void MaybeAddExtraLife(void)
     return;
   extra_life = 0;
   DrawLastLife();
-  lives[current_player]++;
+  player_data->lives++;
 }
 
 static void CollisionDetect(void)
@@ -1253,7 +1026,7 @@ static void start_game(void)
   num_players = active_players = NUM_PLAYERS;
   for (i = 3; i >= 0; i--) {
       current_player = i;
-      lives[i] = 5;
+      player_data->lives = 5;
       level[i] = 0;
       for (j = 0; j < 8; j++) {
 	  player_data->score[j] = 0;
@@ -1279,11 +1052,6 @@ static void SetupLevel(void)
   rand_low = 0x76;
 }
 
-static void ClearScreen(void)
-{
-  memset(pixels, 0, 160*256);
-}
-
 void run_game(void)
 {
   int tmp;
@@ -1294,7 +1062,8 @@ next_player:
   /* "Get Ready" */
 next_level:
   SetupLevel();
-  ClearScreen();
+  if (raster)
+    raster->clear_screen();
   LoadLevel();
   StartLevel();
 next_frame:
@@ -1313,7 +1082,7 @@ next_frame:
       /* Died */
       SavePlayerState();
       PlayTune(0x2fa6);
-      if (--lives[current_player] == 0) {
+      if (--player_data->lives == 0) {
 	  /* Clear Screen */
 	  /* "Game Over" */
 	  /* Highscores.  */
@@ -1324,7 +1093,7 @@ next_frame:
       tmp = current_player;
       do {
 	  tmp = (tmp + 1) & 3;
-      } while (tmp >= num_players || lives[tmp] == 0);
+      } while (tmp >= num_players || all_player_data[tmp].lives == 0);
       current_player = tmp;
       RestorePlayerState();
       goto next_player;

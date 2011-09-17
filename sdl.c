@@ -1,6 +1,8 @@
-/* Copyright (C) 2010 Paul Brook
+/* SDL setup and rendering code.
+   Copyright (C) 2010-2011 Paul Brook
    This code is licenced under the GNU GPL v3 */
 #include "chuckie.h"
+#include "raster.h"
 
 #include "SDL.h"
 

@@ -1,12 +1,13 @@
+#ifndef _SPROITEDATA_H
+#define _SPRITEDATA_H
+
+#include <stdint.h>
+
 typedef const struct {
     uint8_t x;
     uint8_t y;
     uint8_t data[0x90];
 } sprite_t;
-
-extern sprite_t sprites[];
-
-extern const uint8_t *const levels[8];
 
 extern sprite_t SPRITE_NULL;
 extern sprite_t SPRITE_WALL;
@@ -57,3 +58,5 @@ extern sprite_t SPRITE_HAT; /* 0x2f */
 extern sprite_t *const sprite_player_r[4];
 extern sprite_t *const sprite_player_l[4];
 extern sprite_t *const sprite_player_up[4];
+
+#endif /* _SPRITEDATA_H */

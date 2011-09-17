@@ -2,6 +2,8 @@
 Makefile
 chuckie
 chuckie-egg.pnd
+aachuckie
+libchuckie.a
 *.o
 config.h
 config.log

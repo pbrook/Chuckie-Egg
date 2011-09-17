@@ -1,9 +1,17 @@
-bin_PROGRAMS = chuckie
+bin_PROGRAMS = chuckie aachuckie
 
-chuckie_SOURCES = chuckie.c spritedata.c leveldata.c sdl.c audio.c audio-sdl.c
+AM_CFLAGS=-Wall
 
-chuckie_LDADD=$(SDL_LIBS)
-AM_CFLAGS=$(SDL_CFLAGS) -Wall
+noinst_LIBRARIES = libchuckie.a
+libchuckie_a_SOURCES = chuckie.c leveldata.c audio.c
+
+chuckie_SOURCES = spritedata.c sdl.c audio-sdl.c \
+		  raster_4bit.c
+chuckie_LDADD=$(SDL_LIBS) libchuckie.a
+chuckie_CFLAGS=$(SDL_CFLAGS)
+
+aachuckie_SOURCES = ncurses.c
+aachuckie_LDADD=libchuckie.a -lcurses
 
 pnd: chuckie-egg.pnd
 

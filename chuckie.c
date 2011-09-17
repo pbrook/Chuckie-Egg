@@ -468,8 +468,6 @@ static void PlayerJump(void)
   int tmp2;
   int x;
   int y;
-  int y1;
-  int y2;
 
   move_x = player_slide;
   tmp2 = (int8_t)move_y;
@@ -731,6 +729,8 @@ static void MakeSound(void)
 	return;
       tmp = 0x64;
       break;
+  default:
+      abort();
   }
   beep(tmp);
 }

@@ -52,6 +52,7 @@ void PollKeys(void)
 	break;
     case 'q':
     case 'Q':
+    case 27 /* ESC */:
 	endwin();
 	exit(0);
 	break;

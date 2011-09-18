@@ -214,12 +214,52 @@ static void RenderDigit(int x, int y, int n)
     RenderSprite(gltex_digit[n], x, y);
 }
 
+static struct {
+    GLfloat x;
+    GLfloat y;
+    GLfloat u;
+    GLfloat v;
+} *scene_array;
+static int scene_verts;
+static int allocated_scene_verts;
+
+static void RenderScene(void)
+{
+    glVertexPointer(2, GL_FLOAT, sizeof(scene_array[0]), &scene_array->x);
+    glTexCoordPointer(2, GL_FLOAT, sizeof(scene_array[0]), &scene_array->u);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDrawArrays(GL_QUADS, 0, scene_verts);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+static void AddSceneVert(GLfloat x, GLfloat y, GLfloat u, GLfloat v)
+{
+    if (scene_verts == allocated_scene_verts) {
+	allocated_scene_verts += 16;
+	scene_array = realloc(scene_array,
+	    sizeof(scene_array[0]) * allocated_scene_verts);
+    }
+    scene_array[scene_verts].x = x;
+    scene_array[scene_verts].y = y;
+    scene_array[scene_verts].u = u;
+    scene_array[scene_verts].v = v;
+    scene_verts++;
+}
+
+static void AddSceneSprite(gltex t, GLfloat x, GLfloat y)
+{
+    AddSceneVert(x, y, t->x1, t->y1);
+    AddSceneVert(x, y - t->h, t->x1, t->y2);
+    AddSceneVert(x + t->w, y - t->h, t->x2, t->y2);
+    AddSceneVert(x + t->w, y, t->x2, t->y1);
+}
+
 static void RenderPlayerHUD(int player)
 {
     int x = player * 0x22 + 0x1b;
     int n;
-
-    RenderSprite(gltex_blank, x, 0xf0);
 
     for (n = 0; n < 6; n++) {
 	RenderDigit(x + 1 + n * 5, 0xef,
@@ -235,6 +275,67 @@ static void RenderPlayerHUD(int player)
     }
 }
 
+static int item_pos[32];
+static int item_count;
+
+void RenderBackground(void)
+{
+    int player;
+    int x;
+    int y;
+    int n;
+    int type;
+    gltex tex;
+
+    scene_verts = 0;
+    AddSceneSprite(gltex_score, 0, 0xf0);
+    for (player = 0; player < num_players; player++) {
+	x = player * 0x22 + 0x1b;
+	AddSceneSprite(gltex_blank, x, 0xf0);
+    }
+
+    y = 0xe3;
+    AddSceneSprite(gltex_player, 0, y + 1);
+    AddSceneSprite(gltex_digit[current_player + 1], 0x1b, y);
+
+    AddSceneSprite(gltex_level, 0x24, y + 1);
+    n = current_level + 1;
+    AddSceneSprite(gltex_digit[n % 10], 0x45, y);
+    n /= 10;
+    AddSceneSprite(gltex_digit[n % 10], 0x40, y);
+    if (n > 10)
+	AddSceneSprite(gltex_digit[n / 10], 0x3b, y);
+
+    AddSceneSprite(gltex_bonus, 0x4e, y + 1);
+    AddSceneSprite(gltex_digit[0], 0x75, y);
+    AddSceneSprite(gltex_time, 0x7e, y + 1);
+
+    item_count = 0;
+    for (x = 0; x < 20; x++) {
+	for (y = 0; y < 25; y++) {
+	    type = levelmap[y * 20 + x];
+	    if (type & TILE_LADDER) {
+		tex = gltex_ladder;
+	    } else if (type & TILE_WALL) {
+		tex = gltex_wall;
+	    } else if (type & (TILE_EGG | TILE_GRAIN)) {
+		item_pos[item_count++] = y * 20 + x;
+		continue;
+	    } else {
+		continue;
+	    }
+	    AddSceneSprite(tex, x << 3, (y << 3) | 7);
+	}
+    }
+
+    if (have_big_duck) {
+	tex = gltex_cage_open;
+    } else {
+	tex = gltex_cage_closed;
+    }
+    AddSceneSprite(tex, 0, 0xdc);
+}
+
 void RenderFrame(void)
 {
     int x;
@@ -247,53 +348,36 @@ void RenderFrame(void)
 
     glClear(GL_COLOR_BUFFER_BIT);
 
+    RenderScene();
+
     /* HUD  */
-    RenderSprite(gltex_score, 0, 0xf0);
     for (n = 0; n < num_players; n++) {
 	RenderPlayerHUD(n);
     }
 
     y = 0xe3;
-    RenderSprite(gltex_player, 0, y + 1);
-    RenderDigit(0x1b, y, current_player + 1);
 
-    RenderSprite(gltex_level, 0x24, y + 1);
-    n = current_level + 1;
-    RenderDigit(0x45, y, n % 10);
-    n /= 10;
-    RenderDigit(0x40, y, n % 10);
-    if (n > 10)
-	RenderDigit(0x3b, y, n % 10);
-
-    RenderSprite(gltex_bonus, 0x4e, y + 1);
-    RenderDigit(0x66, y, bonus[0]);
     RenderDigit(0x66, y, bonus[0]);
     RenderDigit(0x6b, y, bonus[1]);
     RenderDigit(0x70, y, bonus[2]);
-    RenderDigit(0x75, y, 0);
 
-    RenderSprite(gltex_time, 0x7e, y + 1);
     RenderDigit(0x91, y, timer_ticks[0]);
     RenderDigit(0x96, y, timer_ticks[1]);
     RenderDigit(0x9b, y, timer_ticks[2]);
 
-    /* Background.  */
-    for (x = 0; x < 20; x++) {
-	for (y = 0; y < 25; y++) {
-	    type = levelmap[y * 20 + x];
-	    if (type & TILE_LADDER) {
-		tex = gltex_ladder;
-	    } else if (type & TILE_WALL) {
-		tex = gltex_wall;
-	    } else if (type & TILE_EGG) {
-		tex = gltex_egg;
-	    } else if (type & TILE_GRAIN) {
-		tex = gltex_grain;
-	    } else {
-		continue;
-	    }
-	    RenderSprite(tex, x << 3, (y << 3) | 7);
+    /* Egg/Grain.  */
+    for (n = 0; n < item_count; n++) {
+	type = levelmap[item_pos[n]];
+	if (type & TILE_EGG) {
+	    tex = gltex_egg;
+	} else if (type & TILE_GRAIN) {
+	    tex = gltex_grain;
+	} else {
+	    continue;
 	}
+	x = item_pos[n] % 20;
+	y = item_pos[n] / 20;
+	RenderSprite(tex, x << 3, (y << 3) | 7);
     }
 
     /* Ducks.  */
@@ -340,12 +424,6 @@ void RenderFrame(void)
 	tex = big_duck_frame ? gltex_big_duck_r2 : gltex_big_duck_r1;
     }
     RenderSprite(tex, big_duck_x, big_duck_y);
-    if (have_big_duck) {
-	tex = gltex_cage_open;
-    } else {
-	tex = gltex_cage_closed;
-    }
-    RenderSprite(tex, 0, 0xdc);
 
     SDL_GL_SwapBuffers();
     if (glGetError() != GL_NO_ERROR) {

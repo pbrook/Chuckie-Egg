@@ -104,9 +104,6 @@ static void LoadLevel(void)
     timer_ticks[1] = 0;
     timer_ticks[2] = 0;
 
-    if (raster)
-	raster->draw_hud();
-
     p = levels[current_level & 7];
     num_walls = *(p++);
     num_ladders = *(p++);
@@ -159,13 +156,12 @@ static void LoadLevel(void)
 	}
     }
 
-    if (raster)
-	raster->draw_cage (have_big_duck);
-
     for (i = 0; i < 5 ; i++) {
 	duck[i].tile_x = *(p++);
 	duck[i].tile_y = *(p++);
     }
+
+    RenderBackground();
 }
 
 static void DrawLastLife(void)

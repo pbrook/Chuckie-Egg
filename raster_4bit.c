@@ -198,7 +198,7 @@ static void DrawTile(int x, int y, int type)
     Do_RenderSprite(x << 3, (y << 3) | 7, sprite, color);
 }
 
-static void DrawCage(int is_open)
+static void DrawCage(void)
 {
     sprite_t *sprite = have_big_duck ? &SPRITE_CAGE_OPEN : &SPRITE_CAGE_CLOSED;
     Do_RenderSprite(0, 0xdc, sprite, PLANE_YELLOW);
@@ -248,15 +248,19 @@ static raster_hooks raster_4bit = {
     .draw_player = DrawPlayer,
     .draw_bonus = DrawBonus,
     .draw_timer = DrawTimer,
-    .draw_hud = DrawHUD,
     .draw_score = DrawScore,
     .draw_tile = DrawTile,
-    .draw_cage = DrawCage,
     .draw_big_duck = DrawBigDuck,
     .draw_duck = DrawDuck,
     .draw_life = DrawLife,
     .draw_lift = DrawLift,
     .clear_screen = ClearScreen,
 };
+
+void RenderBackground(void)
+{
+  DrawHUD();
+  DrawCage();
+}
 
 raster_hooks *raster = &raster_4bit;

@@ -13,6 +13,7 @@ extern int cheat;
 
 void PollKeys(void);
 void RenderFrame(void);
+void RenderBackground(void);
 
 void run_game(void);
 

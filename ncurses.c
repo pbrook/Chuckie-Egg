@@ -163,6 +163,10 @@ void RenderFrame(void)
     refresh();
 }
 
+void RenderBackground(void)
+{
+}
+
 int main(int argc, const char *argv[])
 {
     initscr();

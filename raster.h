@@ -6,10 +6,8 @@ typedef struct {
     void (*draw_player)(void);
     void (*draw_timer)(int n);
     void (*draw_bonus)(int n);
-    void (*draw_hud)(void);
     void (*draw_score)(int n, int oldval, int newval);
     void (*draw_tile)(int x, int y, int type);
-    void (*draw_cage)(int is_open);
     void (*draw_big_duck)(void);
     void (*draw_duck)(int n);
     void (*draw_life)(int n);

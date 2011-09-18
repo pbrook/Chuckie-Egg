@@ -39,29 +39,52 @@ static Uint32 do_timer(Uint32 interval, void *param)
 }
 
 typedef struct {
-    GLuint handle;
     GLfloat w;
     GLfloat h;
+    GLfloat x1;
+    GLfloat x2;
+    GLfloat y1;
+    GLfloat y2;
     SDL_Color color;
 } *gltex;
 
+#define TEX_SIZE 128
+static GLubyte tex_buffer[TEX_SIZE * TEX_SIZE * 4];
+static GLuint tex_handle;
+static int tex_x;
+static int tex_y;
+static int tex_h;
+
 static gltex LoadTexture(sprite_t *sprite, SDL_Color color)
 {
-    gltex texture;
-    GLubyte *buf;
+    gltex tex;
     GLubyte *dest;
     const uint8_t *src;
-    uint8_t mask;
+    uint8_t mask = 0;
     int i;
     int j;
+    int stride;
 
-    texture = malloc(sizeof(*texture));
-    buf = (GLubyte *)malloc(sprite->x * sprite->y * 4);
-    dest = buf;
+    tex = malloc(sizeof(*tex));
+    if (tex_x + sprite->x > TEX_SIZE) {
+	tex_y += tex_h;
+	tex_h = 0;
+	tex_x = 0;
+    }
+    if (sprite->y > tex_h)
+	tex_h = sprite->y;
+    if (tex_y + tex_h > TEX_SIZE)
+	abort();
+    stride = (TEX_SIZE - sprite->x) * 4;
+    dest = &tex_buffer[(tex_x + tex_y * TEX_SIZE) * 4];
     src = sprite->data;
-    for (i = 0; i < (sprite->x * sprite->y) >> 3; i++) {
-	mask = *(src++);
-	for (j = 0; j < 8; j++) {
+    for (j = 0; j < sprite->y; j++) {
+	for (i = 0; i < sprite->x; i++) {
+	    if ((i & 7) == 0)
+		mask = *(src++);
+	    *(dest++) = color.r;
+	    *(dest++) = color.g;
+	    *(dest++) = color.b;
 	    if (mask & 0x80) {
 		*(dest++) = 255;
 	    } else {
@@ -69,26 +92,36 @@ static gltex LoadTexture(sprite_t *sprite, SDL_Color color)
 	    }
 	    mask <<= 1;
 	}
+	dest += stride;
     }
-    glGenTextures(1, &texture->handle);
-    glBindTexture(GL_TEXTURE_2D, texture->handle);
+    tex->x1 = tex_x / (float)TEX_SIZE;
+    tex->x2 = tex->x1 + sprite->x / (float)TEX_SIZE;
+    tex->y1 = tex_y / (float)TEX_SIZE;
+    tex->y2 = tex->y1 + sprite->y / (float)TEX_SIZE;
+    tex->color = color;
+    tex->w = sprite->x;
+    tex->h = sprite->y;
+    tex_x += sprite->x;
+printf("%d, %d, %d, %d\n", tex_x, tex_y + tex_h, sprite->x, sprite->y);
+    return tex;
+}
+
+static void FinishTextures(void)
+{
+    glGenTextures(1, &tex_handle);
+    glBindTexture(GL_TEXTURE_2D, tex_handle);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA,
-		 sprite->x, sprite->y, 0,
-		 GL_ALPHA, GL_UNSIGNED_BYTE, buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		 TEX_SIZE, TEX_SIZE, 0,
+		 GL_RGBA, GL_UNSIGNED_BYTE, &tex_buffer);
     if (glGetError() != GL_NO_ERROR) {
 	die("Failed to load texture\n");
     }
-    free(buf);
-    texture->color = color;
-    texture->w = sprite->x;
-    texture->h = sprite->y;
-    return texture;
 }
 
 static SDL_Color sdl_yellow = YELLOW;
@@ -128,25 +161,24 @@ static void LoadTextures(void)
 {
     int i;
 
-    gltex_wall = LoadTexture(&SPRITE_WALL, sdl_green);
-    gltex_ladder = LoadTexture(&SPRITE_LADDER, sdl_purple);
-    gltex_egg = LoadTexture(&SPRITE_EGG, sdl_yellow);
-    gltex_grain = LoadTexture(&SPRITE_GRAIN, sdl_purple);
-    gltex_lift = LoadTexture(&SPRITE_LIFT, sdl_yellow);
-    for (i = 0; i < 10; i++)
-	gltex_duck[i] = LoadTexture(sprite_duck[i], sdl_blue);
+    gltex_cage_open = LoadTexture(&SPRITE_CAGE_OPEN, sdl_yellow);
+    gltex_cage_closed = LoadTexture(&SPRITE_CAGE_CLOSED, sdl_yellow);
     gltex_big_duck_l1 = LoadTexture(&SPRITE_BIGDUCK_L1, sdl_yellow);
     gltex_big_duck_l2 = LoadTexture(&SPRITE_BIGDUCK_L2, sdl_yellow);
     gltex_big_duck_r1 = LoadTexture(&SPRITE_BIGDUCK_R1, sdl_yellow);
     gltex_big_duck_r2 = LoadTexture(&SPRITE_BIGDUCK_R2, sdl_yellow);
-    gltex_cage_open = LoadTexture(&SPRITE_CAGE_OPEN, sdl_yellow);
-    gltex_cage_closed = LoadTexture(&SPRITE_CAGE_CLOSED, sdl_yellow);
+    for (i = 0; i < 10; i++)
+	gltex_duck[i] = LoadTexture(sprite_duck[i], sdl_blue);
     for (i = 0; i < 4; i++) {
 	gltex_player_r[i] = LoadTexture(sprite_player_r[i], sdl_yellow);
 	gltex_player_l[i] = LoadTexture(sprite_player_l[i], sdl_yellow);
 	gltex_player_up[i] = LoadTexture(sprite_player_up[i], sdl_yellow);
     }
 
+    gltex_wall = LoadTexture(&SPRITE_WALL, sdl_green);
+    gltex_ladder = LoadTexture(&SPRITE_LADDER, sdl_purple);
+    gltex_egg = LoadTexture(&SPRITE_EGG, sdl_yellow);
+    gltex_grain = LoadTexture(&SPRITE_GRAIN, sdl_purple);
 
     gltex_score = LoadTexture(&SPRITE_SCORE, sdl_purple);
     gltex_blank = LoadTexture(&SPRITE_BLANK, sdl_purple);
@@ -154,25 +186,26 @@ static void LoadTextures(void)
     gltex_level = LoadTexture(&SPRITE_LEVEL, sdl_purple);
     gltex_bonus = LoadTexture(&SPRITE_BONUS, sdl_purple);
     gltex_time = LoadTexture(&SPRITE_TIME, sdl_purple);
-    gltex_hat = LoadTexture(&SPRITE_HAT, sdl_yellow);
     for (i = 0; i < 10; i++)
 	gltex_digit[i] = LoadTexture(&sprite_digit[i], sdl_black);
+    gltex_lift = LoadTexture(&SPRITE_LIFT, sdl_yellow);
+    gltex_hat = LoadTexture(&SPRITE_HAT, sdl_yellow);
+    FinishTextures();
 }
 
 static void RenderSprite(gltex t, GLfloat x, GLfloat y)
 {
     GLfloat w = t->w;
     GLfloat h = t->h;
-    glBindTexture(GL_TEXTURE_2D, t->handle);
+    //glBindTexture(GL_TEXTURE_2D, t->handle);
     glBegin(GL_QUADS);
-    glColor3ub(t->color.r, t->color.g, t->color.b);
-    glTexCoord2f(0, 0);
+    glTexCoord2f(t->x1, t->y1);
     glVertex2f(x, y);
-    glTexCoord2f(0, 1);
+    glTexCoord2f(t->x1, t->y2);
     glVertex2f(x, y - h);
-    glTexCoord2f(1, 1);
+    glTexCoord2f(t->x2, t->y2);
     glVertex2f(x + w, y - h);
-    glTexCoord2f(1, 0);
+    glTexCoord2f(t->x2, t->y1);
     glVertex2f(x + w, y);
     glEnd();
 }

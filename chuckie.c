@@ -160,7 +160,7 @@ static void LoadLevel(void)
     }
 
     if (raster)
-	raster->draw_cage ();
+	raster->draw_cage (have_big_duck);
 
     for (i = 0; i < 5 ; i++) {
 	duck[i].tile_x = *(p++);

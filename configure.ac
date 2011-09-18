@@ -1,4 +1,4 @@
-AC_INIT(chuckie, 0.2, paul@nowt.org)
+AC_INIT(chuckie, 0.3, paul@nowt.org)
 
 AM_INIT_AUTOMAKE(foreign)
 

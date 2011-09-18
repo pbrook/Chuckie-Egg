@@ -33,7 +33,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = chuckie$(EXEEXT) aachuckie$(EXEEXT)
+bin_PROGRAMS = chuckie$(EXEEXT) aachuckie$(EXEEXT) glchuckie$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -64,11 +64,18 @@ aachuckie_OBJECTS = $(am_aachuckie_OBJECTS)
 aachuckie_DEPENDENCIES = libchuckie.a
 am_chuckie_OBJECTS = chuckie-spritedata.$(OBJEXT) \
 	chuckie-sdl.$(OBJEXT) chuckie-audio-sdl.$(OBJEXT) \
-	chuckie-raster_4bit.$(OBJEXT)
+	chuckie-raster_4bit.$(OBJEXT) chuckie-sdl-input.$(OBJEXT)
 chuckie_OBJECTS = $(am_chuckie_OBJECTS)
 am__DEPENDENCIES_1 =
 chuckie_DEPENDENCIES = $(am__DEPENDENCIES_1) libchuckie.a
 chuckie_LINK = $(CCLD) $(chuckie_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_glchuckie_OBJECTS = glchuckie-spritedata.$(OBJEXT) \
+	glchuckie-gl.$(OBJEXT) glchuckie-audio-sdl.$(OBJEXT) \
+	glchuckie-sdl-input.$(OBJEXT)
+glchuckie_OBJECTS = $(am_glchuckie_OBJECTS)
+glchuckie_DEPENDENCIES = $(am__DEPENDENCIES_1) libchuckie.a
+glchuckie_LINK = $(CCLD) $(glchuckie_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -79,9 +86,9 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libchuckie_a_SOURCES) $(aachuckie_SOURCES) \
-	$(chuckie_SOURCES)
+	$(chuckie_SOURCES) $(glchuckie_SOURCES)
 DIST_SOURCES = $(libchuckie_a_SOURCES) $(aachuckie_SOURCES) \
-	$(chuckie_SOURCES)
+	$(chuckie_SOURCES) $(glchuckie_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -186,11 +193,12 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall
 noinst_LIBRARIES = libchuckie.a
 libchuckie_a_SOURCES = chuckie.c leveldata.c audio.c
-chuckie_SOURCES = spritedata.c sdl.c audio-sdl.c \
-		  raster_4bit.c
-
+chuckie_SOURCES = spritedata.c sdl.c audio-sdl.c raster_4bit.c sdl-input.c
 chuckie_LDADD = $(SDL_LIBS) libchuckie.a
-chuckie_CFLAGS = $(SDL_CFLAGS)
+chuckie_CFLAGS = $(SDL_CFLAGS) $(AM_CFLAGS)
+glchuckie_SOURCES = spritedata.c gl.c audio-sdl.c sdl-input.c
+glchuckie_LDADD = $(SDL_LIBS) libchuckie.a -lGL
+glchuckie_CFLAGS = $(SDL_CFLAGS) $(AM_CFLAGS)
 aachuckie_SOURCES = ncurses.c
 aachuckie_LDADD = libchuckie.a -lcurses
 all: config.h
@@ -299,6 +307,9 @@ aachuckie$(EXEEXT): $(aachuckie_OBJECTS) $(aachuckie_DEPENDENCIES)
 chuckie$(EXEEXT): $(chuckie_OBJECTS) $(chuckie_DEPENDENCIES) 
 	@rm -f chuckie$(EXEEXT)
 	$(chuckie_LINK) $(chuckie_OBJECTS) $(chuckie_LDADD) $(LIBS)
+glchuckie$(EXEEXT): $(glchuckie_OBJECTS) $(glchuckie_DEPENDENCIES) 
+	@rm -f glchuckie$(EXEEXT)
+	$(glchuckie_LINK) $(glchuckie_OBJECTS) $(glchuckie_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -309,9 +320,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-audio-sdl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-raster_4bit.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-sdl-input.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-sdl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-spritedata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/glchuckie-audio-sdl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/glchuckie-gl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/glchuckie-sdl-input.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/glchuckie-spritedata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/leveldata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ncurses.Po@am__quote@
 
@@ -384,6 +400,76 @@ chuckie-raster_4bit.obj: raster_4bit.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='raster_4bit.c' object='chuckie-raster_4bit.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-raster_4bit.obj `if test -f 'raster_4bit.c'; then $(CYGPATH_W) 'raster_4bit.c'; else $(CYGPATH_W) '$(srcdir)/raster_4bit.c'; fi`
+
+chuckie-sdl-input.o: sdl-input.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-sdl-input.o -MD -MP -MF $(DEPDIR)/chuckie-sdl-input.Tpo -c -o chuckie-sdl-input.o `test -f 'sdl-input.c' || echo '$(srcdir)/'`sdl-input.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-sdl-input.Tpo $(DEPDIR)/chuckie-sdl-input.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl-input.c' object='chuckie-sdl-input.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-sdl-input.o `test -f 'sdl-input.c' || echo '$(srcdir)/'`sdl-input.c
+
+chuckie-sdl-input.obj: sdl-input.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-sdl-input.obj -MD -MP -MF $(DEPDIR)/chuckie-sdl-input.Tpo -c -o chuckie-sdl-input.obj `if test -f 'sdl-input.c'; then $(CYGPATH_W) 'sdl-input.c'; else $(CYGPATH_W) '$(srcdir)/sdl-input.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/chuckie-sdl-input.Tpo $(DEPDIR)/chuckie-sdl-input.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl-input.c' object='chuckie-sdl-input.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -c -o chuckie-sdl-input.obj `if test -f 'sdl-input.c'; then $(CYGPATH_W) 'sdl-input.c'; else $(CYGPATH_W) '$(srcdir)/sdl-input.c'; fi`
+
+glchuckie-spritedata.o: spritedata.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-spritedata.o -MD -MP -MF $(DEPDIR)/glchuckie-spritedata.Tpo -c -o glchuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-spritedata.Tpo $(DEPDIR)/glchuckie-spritedata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='spritedata.c' object='glchuckie-spritedata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c
+
+glchuckie-spritedata.obj: spritedata.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-spritedata.obj -MD -MP -MF $(DEPDIR)/glchuckie-spritedata.Tpo -c -o glchuckie-spritedata.obj `if test -f 'spritedata.c'; then $(CYGPATH_W) 'spritedata.c'; else $(CYGPATH_W) '$(srcdir)/spritedata.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-spritedata.Tpo $(DEPDIR)/glchuckie-spritedata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='spritedata.c' object='glchuckie-spritedata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-spritedata.obj `if test -f 'spritedata.c'; then $(CYGPATH_W) 'spritedata.c'; else $(CYGPATH_W) '$(srcdir)/spritedata.c'; fi`
+
+glchuckie-gl.o: gl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-gl.o -MD -MP -MF $(DEPDIR)/glchuckie-gl.Tpo -c -o glchuckie-gl.o `test -f 'gl.c' || echo '$(srcdir)/'`gl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-gl.Tpo $(DEPDIR)/glchuckie-gl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gl.c' object='glchuckie-gl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-gl.o `test -f 'gl.c' || echo '$(srcdir)/'`gl.c
+
+glchuckie-gl.obj: gl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-gl.obj -MD -MP -MF $(DEPDIR)/glchuckie-gl.Tpo -c -o glchuckie-gl.obj `if test -f 'gl.c'; then $(CYGPATH_W) 'gl.c'; else $(CYGPATH_W) '$(srcdir)/gl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-gl.Tpo $(DEPDIR)/glchuckie-gl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gl.c' object='glchuckie-gl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-gl.obj `if test -f 'gl.c'; then $(CYGPATH_W) 'gl.c'; else $(CYGPATH_W) '$(srcdir)/gl.c'; fi`
+
+glchuckie-audio-sdl.o: audio-sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-audio-sdl.o -MD -MP -MF $(DEPDIR)/glchuckie-audio-sdl.Tpo -c -o glchuckie-audio-sdl.o `test -f 'audio-sdl.c' || echo '$(srcdir)/'`audio-sdl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-audio-sdl.Tpo $(DEPDIR)/glchuckie-audio-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-sdl.c' object='glchuckie-audio-sdl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-audio-sdl.o `test -f 'audio-sdl.c' || echo '$(srcdir)/'`audio-sdl.c
+
+glchuckie-audio-sdl.obj: audio-sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-audio-sdl.obj -MD -MP -MF $(DEPDIR)/glchuckie-audio-sdl.Tpo -c -o glchuckie-audio-sdl.obj `if test -f 'audio-sdl.c'; then $(CYGPATH_W) 'audio-sdl.c'; else $(CYGPATH_W) '$(srcdir)/audio-sdl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-audio-sdl.Tpo $(DEPDIR)/glchuckie-audio-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-sdl.c' object='glchuckie-audio-sdl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-audio-sdl.obj `if test -f 'audio-sdl.c'; then $(CYGPATH_W) 'audio-sdl.c'; else $(CYGPATH_W) '$(srcdir)/audio-sdl.c'; fi`
+
+glchuckie-sdl-input.o: sdl-input.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-sdl-input.o -MD -MP -MF $(DEPDIR)/glchuckie-sdl-input.Tpo -c -o glchuckie-sdl-input.o `test -f 'sdl-input.c' || echo '$(srcdir)/'`sdl-input.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-sdl-input.Tpo $(DEPDIR)/glchuckie-sdl-input.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl-input.c' object='glchuckie-sdl-input.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-sdl-input.o `test -f 'sdl-input.c' || echo '$(srcdir)/'`sdl-input.c
+
+glchuckie-sdl-input.obj: sdl-input.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -MT glchuckie-sdl-input.obj -MD -MP -MF $(DEPDIR)/glchuckie-sdl-input.Tpo -c -o glchuckie-sdl-input.obj `if test -f 'sdl-input.c'; then $(CYGPATH_W) 'sdl-input.c'; else $(CYGPATH_W) '$(srcdir)/sdl-input.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/glchuckie-sdl-input.Tpo $(DEPDIR)/glchuckie-sdl-input.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl-input.c' object='glchuckie-sdl-input.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(glchuckie_CFLAGS) $(CFLAGS) -c -o glchuckie-sdl-input.obj `if test -f 'sdl-input.c'; then $(CYGPATH_W) 'sdl-input.c'; else $(CYGPATH_W) '$(srcdir)/sdl-input.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

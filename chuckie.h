@@ -102,4 +102,6 @@ typedef struct {
 } playerdata_t;
 
 extern playerdata_t all_player_data[4];
+
+int DuckSprite(int n);
 #endif

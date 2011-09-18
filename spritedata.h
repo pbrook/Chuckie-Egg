@@ -55,6 +55,8 @@ extern sprite_t SPRITE_BONUS;
 extern sprite_t SPRITE_TIME;
 extern sprite_t SPRITE_HAT; /* 0x2f */
 
+extern sprite_t *const sprite_duck[10];
+
 extern sprite_t *const sprite_player_r[4];
 extern sprite_t *const sprite_player_l[4];
 extern sprite_t *const sprite_player_up[4];

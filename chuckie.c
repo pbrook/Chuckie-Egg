@@ -781,6 +781,40 @@ static void ReduceBonus(void)
     zero_bonus = 1;
 }
 
+int DuckSprite(int n)
+{
+  int dir;
+  int sprite;
+
+  dir = duck[n].dir;
+  switch (duck[n].mode) {
+  case DUCK_BORED:
+      if (dir & DIR_HORIZ) {
+	  sprite = (dir == DIR_R) ? 0 : 2;
+      } else {
+	  sprite = 4;
+      }
+      break;
+  case DUCK_STEP:
+      if (dir & DIR_HORIZ) {
+	  sprite = (dir == DIR_R) ? 1 : 3;
+      } else {
+	  sprite = 5;
+      }
+      break;
+  case DUCK_EAT2:
+  case DUCK_EAT4:
+      sprite = (dir == DIR_R) ? 6 : 8;
+      break;
+  case DUCK_EAT3:
+      sprite = (dir == DIR_R) ? 7 : 9;
+      break;
+  default:
+      abort();
+  };
+  return sprite;
+}
+
 static void MoveDucks(void)
 {
   int tmp;

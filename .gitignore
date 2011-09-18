@@ -3,10 +3,12 @@ Makefile
 chuckie
 chuckie-egg.pnd
 aachuckie
+glchuckie
 libchuckie.a
 *.o
 config.h
 config.log
 config.status
+autom4te.cache
 stamp-h1
 *.swp

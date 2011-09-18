@@ -218,48 +218,14 @@ static void DrawBigDuck(void)
 static void DrawDuck(int n)
 {
   int x;
-  int dir;
-  sprite_t *sprite;
+  int sprite;
 
   x = duck[n].x;
-  dir = duck[n].dir;
-  switch (duck[n].mode) {
-  case DUCK_BORED:
-      if (dir & DIR_HORIZ) {
-	  sprite = (dir == DIR_R) ? &SPRITE_DUCK_R : &SPRITE_DUCK_L;
-      } else {
-	  sprite = &SPRITE_DUCK_UP;
-      }
-      break;
-  case DUCK_STEP:
-      if (dir & DIR_HORIZ) {
-	  sprite = (dir == DIR_R) ? &SPRITE_DUCK_R2 : &SPRITE_DUCK_L2;
-      } else {
-	  sprite = &SPRITE_DUCK_UP2;
-      }
-      break;
-  case DUCK_EAT2:
-  case DUCK_EAT4:
-      if (dir == DIR_R) {
-	 sprite = &SPRITE_DUCK_EAT_R;
-      } else {
-	 sprite = &SPRITE_DUCK_EAT_L;
-	 x -= 8;
-      }
-      break;
-  case DUCK_EAT3:
-      if (dir == DIR_R) {
-	 sprite = &SPRITE_DUCK_EAT_R2;
-      } else {
-	 sprite = &SPRITE_DUCK_EAT_L2;
-	 x -= 8;
-      }
-      break;
-  default:
-      abort();
-  };
+  sprite = DuckSprite(n);
+  if (sprite >= 8)
+      x -= 8;
 
-  Do_RenderSprite(x, duck[n].y, sprite, PLANE_BLUE);
+  Do_RenderSprite(x, duck[n].y, sprite_duck[sprite], PLANE_BLUE);
 }
 
 static void DrawLife(int n)

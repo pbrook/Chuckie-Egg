@@ -102,7 +102,6 @@ static gltex LoadTexture(sprite_t *sprite, SDL_Color color)
     tex->w = sprite->x;
     tex->h = sprite->y;
     tex_x += sprite->x;
-printf("%d, %d, %d, %d\n", tex_x, tex_y + tex_h, sprite->x, sprite->y);
     return tex;
 }
 

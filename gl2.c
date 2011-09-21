@@ -14,6 +14,7 @@
 
 static int fullscreen = 0;
 static int scale = 2;
+static int shaders = 1;
 
 raster_hooks *raster = NULL;
 
@@ -270,27 +271,42 @@ static void RenderGroup(object_group *g)
     }
 
     if (g->ind_count) {
-	glUniform3f(param_color, g->color[0], g->color[1], g->color[2]);
 	m_mul(&mat, &modelworld, &eye);
-	glUniformMatrix4fv(param_world, 1, GL_FALSE, &mat.c[0].r[0]);
+	if (shaders) {
+	    glUniform3f(param_color, g->color[0], g->color[1], g->color[2]);
+	    glUniformMatrix4fv(param_world, 1, GL_FALSE, &mat.c[0].r[0]);
+	} else {
+	    glMatrixMode(GL_MODELVIEW);
+	    glLoadMatrixf(&mat.c[0].r[0]);
+	    glColor3f(g->color[0], g->color[1], g->color[2]);
+	}
 	glDrawElements(GL_TRIANGLES, g->ind_count, GL_UNSIGNED_SHORT,
-		       (void *)(g->ind_start * sizeof(GLushort)));
+		       (void *)(sizeof(GLushort) * g->ind_start));
     }
     eye = prev;
 }
 
 static void RenderSprite(sprite_model *s, int x, int y, int rot)
 {
-    glUniformMatrix4fv(param_proj, 1, GL_FALSE, &projection.c[0].r[0]);
     glBindBuffer(GL_ARRAY_BUFFER, s->vec_vbo);
-    glVertexAttribPointer(attr_position, 3, GL_FLOAT, GL_FALSE,
-       	sizeof(GLfloat) * 3, (void *)0);
-    glEnableVertexAttribArray(attr_position);
+    if (shaders) {
+	glUniformMatrix4fv(param_proj, 1, GL_FALSE, &projection.c[0].r[0]);
+	glVertexAttribPointer(attr_position, 3, GL_FLOAT, GL_FALSE,
+	    sizeof(GLfloat) * 3, (void *)0);
+	glEnableVertexAttribArray(attr_position);
+    } else {
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(&projection.c[0].r[0]);
+	glVertexPointer(3, GL_FLOAT, sizeof(GLfloat) * 3, (void *)0);
+	glEnableClientState(GL_VERTEX_ARRAY);
+    }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s->ind_vbo);
     m_identity(&eye);
     m_swizzle(&modelworld, x, y, rot);
     RenderGroup(s->group);
-    glDisableVertexAttribArray(attr_position);
+    if (shaders) {
+	glDisableVertexAttribArray(attr_position);
+    }
 }
 
 #if 0
@@ -404,7 +420,9 @@ void RenderFrame(void)
     }
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(program);
+    if (shaders) {
+	glUseProgram(program);
+    }
 
     /* Egg/Grain.  */
     for (x = 0; x < 20; x++) {
@@ -521,8 +539,10 @@ static void parse_args(int argc, const char *argv[])
 	  scale = *p - '0';
 	else if (*p == 'f')
 	  fullscreen = 1;
+	else if (*p == 's')
+	  shaders = 0;
 	else if (*p == 'h') {
-	    printf("Usage: chuckie -123456789f\n");
+	    printf("Usage: chuckie -123456789fs\n");
 	    exit(0);
 	}
     }
@@ -532,31 +552,33 @@ static void InitGL(void)
 {
     GLint program_ok;
 
-    //glewInit();
     glDisable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glClearColor(0, 0, 0, 0);
+    glEnable(GL_CULL_FACE);
     LoadTextures();
 
-    vertex_shader = make_shader(GL_VERTEX_SHADER, vertex_code);
-    fragment_shader = make_shader(GL_FRAGMENT_SHADER, fragment_code);
+    if (shaders) {
+	vertex_shader = make_shader(GL_VERTEX_SHADER, vertex_code);
+	fragment_shader = make_shader(GL_FRAGMENT_SHADER, fragment_code);
 
-    program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-    glGetProgramiv(program, GL_LINK_STATUS, &program_ok);
-    if (!program_ok) {
-        fprintf(stderr, "Failed to link shader program:\n");
-        show_info_log(program, glGetProgramiv, glGetProgramInfoLog);
-        glDeleteProgram(program);
-        exit(1);
+	program = glCreateProgram();
+	glAttachShader(program, vertex_shader);
+	glAttachShader(program, fragment_shader);
+	glLinkProgram(program);
+	glGetProgramiv(program, GL_LINK_STATUS, &program_ok);
+	if (!program_ok) {
+	    fprintf(stderr, "Failed to link shader program:\n");
+	    show_info_log(program, glGetProgramiv, glGetProgramInfoLog);
+	    glDeleteProgram(program);
+	    exit(1);
+	}
+	attr_position = glGetAttribLocation(program, "position");
+	param_color = glGetUniformLocation(program, "color");
+	param_world = glGetUniformLocation(program, "world");
+	param_proj = glGetUniformLocation(program, "proj");
     }
-    attr_position = glGetAttribLocation(program, "position");
-    param_color = glGetUniformLocation(program, "color");
-    param_world = glGetUniformLocation(program, "world");
-    param_proj = glGetUniformLocation(program, "proj");
 
     glViewport(0, 0, scale * 320, scale * 240);
     m_project(&projection, 160, 120, DEPTH - 50.0f, DEPTH + 50.0f);

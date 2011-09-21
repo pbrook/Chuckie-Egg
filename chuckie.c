@@ -12,6 +12,7 @@
 
 #define NUM_PLAYERS 1
 
+int skip_frame;
 int cheat;
 int is_dead;
 int zero_bonus;

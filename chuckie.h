@@ -10,6 +10,7 @@
 extern uint8_t buttons;
 extern uint8_t button_ack;
 extern int cheat;
+extern int skip_frame;
 
 void PollKeys(void);
 void RenderFrame(void);

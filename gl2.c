@@ -399,6 +399,9 @@ void RenderFrame(void)
     int rot;
     sprite_model *model;
 
+    if (skip_frame) {
+	return;
+    }
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);

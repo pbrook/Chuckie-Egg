@@ -15,6 +15,8 @@ SDLKey keys[5][6] = {
 		 SDLK_PAGEDOWN, SDLK_ESCAPE}
 };
 
+static uint32_t next_time;
+
 /* Read inputs, and wait until the start of the next frame.  */
 void PollKeys(void)
 {
@@ -22,9 +24,21 @@ void PollKeys(void)
   int i;
   int sym;
   SDLKey *keylist;
+  uint32_t now;
+  int32_t delta;
 
+  now = SDL_GetTicks();
+  if (next_time == 0)
+      next_time = now;
+  delta = next_time - now;
+  skip_frame = (delta < 0);
+  next_time += 30;
   while (1) {
-      if (SDL_WaitEvent(&event) == 0) {
+      if (skip_frame) {
+	  if (!SDL_PollEvent (&event)) {
+	      return;
+	  }
+      } else if (SDL_WaitEvent(&event) == 0) {
 	  fprintf(stderr, "SDL_WaitEvent: %s\n", SDL_GetError());
 	  exit(1);
       }

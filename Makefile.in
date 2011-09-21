@@ -33,7 +33,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = chuckie$(EXEEXT) aachuckie$(EXEEXT) glchuckie$(EXEEXT)
+bin_PROGRAMS = chuckie$(EXEEXT) aachuckie$(EXEEXT) glchuckie$(EXEEXT) \
+	3dchuckie$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -59,6 +60,17 @@ am_libchuckie_a_OBJECTS = chuckie.$(OBJEXT) leveldata.$(OBJEXT) \
 libchuckie_a_OBJECTS = $(am_libchuckie_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am_3dchuckie_OBJECTS = 3dchuckie-spritedata.$(OBJEXT) \
+	3dchuckie-gl2.$(OBJEXT) 3dchuckie-audio-sdl.$(OBJEXT) \
+	3dchuckie-sdl-input.$(OBJEXT) 3dchuckie-farmer.$(OBJEXT) \
+	3dchuckie-duck.$(OBJEXT) 3dchuckie-egg.$(OBJEXT) \
+	3dchuckie-wall.$(OBJEXT) 3dchuckie-ladder.$(OBJEXT) \
+	3dchuckie-grain.$(OBJEXT)
+3dchuckie_OBJECTS = $(am_3dchuckie_OBJECTS)
+am__DEPENDENCIES_1 =
+3dchuckie_DEPENDENCIES = $(am__DEPENDENCIES_1) libchuckie.a
+3dchuckie_LINK = $(CCLD) $(3dchuckie_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_aachuckie_OBJECTS = ncurses.$(OBJEXT)
 aachuckie_OBJECTS = $(am_aachuckie_OBJECTS)
 aachuckie_DEPENDENCIES = libchuckie.a
@@ -66,7 +78,6 @@ am_chuckie_OBJECTS = chuckie-spritedata.$(OBJEXT) \
 	chuckie-sdl.$(OBJEXT) chuckie-audio-sdl.$(OBJEXT) \
 	chuckie-raster_4bit.$(OBJEXT) chuckie-sdl-input.$(OBJEXT)
 chuckie_OBJECTS = $(am_chuckie_OBJECTS)
-am__DEPENDENCIES_1 =
 chuckie_DEPENDENCIES = $(am__DEPENDENCIES_1) libchuckie.a
 chuckie_LINK = $(CCLD) $(chuckie_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -85,10 +96,10 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libchuckie_a_SOURCES) $(aachuckie_SOURCES) \
-	$(chuckie_SOURCES) $(glchuckie_SOURCES)
-DIST_SOURCES = $(libchuckie_a_SOURCES) $(aachuckie_SOURCES) \
-	$(chuckie_SOURCES) $(glchuckie_SOURCES)
+SOURCES = $(libchuckie_a_SOURCES) $(3dchuckie_SOURCES) \
+	$(aachuckie_SOURCES) $(chuckie_SOURCES) $(glchuckie_SOURCES)
+DIST_SOURCES = $(libchuckie_a_SOURCES) $(3dchuckie_SOURCES) \
+	$(aachuckie_SOURCES) $(chuckie_SOURCES) $(glchuckie_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -199,13 +210,21 @@ chuckie_CFLAGS = $(SDL_CFLAGS) $(AM_CFLAGS)
 glchuckie_SOURCES = spritedata.c gl.c audio-sdl.c sdl-input.c
 glchuckie_LDADD = $(SDL_LIBS) libchuckie.a -lGL
 glchuckie_CFLAGS = $(SDL_CFLAGS) $(AM_CFLAGS)
+3dchuckie_SOURCES = spritedata.c gl2.c audio-sdl.c sdl-input.c \
+	models/farmer.x3d models/duck.x3d models/egg.x3d models/wall.x3d \
+	models/ladder.x3d models/grain.x3d
+
+3dchuckie_LDADD = $(SDL_LIBS) libchuckie.a -lGLEW
+3dchuckie_CFLAGS = $(SDL_CFLAGS) $(AM_CFLAGS)
 aachuckie_SOURCES = ncurses.c
 aachuckie_LDADD = libchuckie.a -lcurses
+CLEANFILES = models/*.c
+SUFFIXES = .x3d
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .o .obj
+.SUFFIXES: .x3d .c .o .obj
 am--refresh:
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -301,6 +320,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+3dchuckie$(EXEEXT): $(3dchuckie_OBJECTS) $(3dchuckie_DEPENDENCIES) 
+	@rm -f 3dchuckie$(EXEEXT)
+	$(3dchuckie_LINK) $(3dchuckie_OBJECTS) $(3dchuckie_LDADD) $(LIBS)
 aachuckie$(EXEEXT): $(aachuckie_OBJECTS) $(aachuckie_DEPENDENCIES) 
 	@rm -f aachuckie$(EXEEXT)
 	$(LINK) $(aachuckie_OBJECTS) $(aachuckie_LDADD) $(LIBS)
@@ -317,6 +339,16 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-audio-sdl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-duck.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-egg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-farmer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-gl2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-grain.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-ladder.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-sdl-input.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-spritedata.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-wall.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/audio.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-audio-sdl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chuckie-raster_4bit.Po@am__quote@
@@ -344,6 +376,146 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+3dchuckie-spritedata.o: spritedata.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-spritedata.o -MD -MP -MF $(DEPDIR)/3dchuckie-spritedata.Tpo -c -o 3dchuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-spritedata.Tpo $(DEPDIR)/3dchuckie-spritedata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='spritedata.c' object='3dchuckie-spritedata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c
+
+3dchuckie-spritedata.obj: spritedata.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-spritedata.obj -MD -MP -MF $(DEPDIR)/3dchuckie-spritedata.Tpo -c -o 3dchuckie-spritedata.obj `if test -f 'spritedata.c'; then $(CYGPATH_W) 'spritedata.c'; else $(CYGPATH_W) '$(srcdir)/spritedata.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-spritedata.Tpo $(DEPDIR)/3dchuckie-spritedata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='spritedata.c' object='3dchuckie-spritedata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-spritedata.obj `if test -f 'spritedata.c'; then $(CYGPATH_W) 'spritedata.c'; else $(CYGPATH_W) '$(srcdir)/spritedata.c'; fi`
+
+3dchuckie-gl2.o: gl2.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-gl2.o -MD -MP -MF $(DEPDIR)/3dchuckie-gl2.Tpo -c -o 3dchuckie-gl2.o `test -f 'gl2.c' || echo '$(srcdir)/'`gl2.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-gl2.Tpo $(DEPDIR)/3dchuckie-gl2.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gl2.c' object='3dchuckie-gl2.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-gl2.o `test -f 'gl2.c' || echo '$(srcdir)/'`gl2.c
+
+3dchuckie-gl2.obj: gl2.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-gl2.obj -MD -MP -MF $(DEPDIR)/3dchuckie-gl2.Tpo -c -o 3dchuckie-gl2.obj `if test -f 'gl2.c'; then $(CYGPATH_W) 'gl2.c'; else $(CYGPATH_W) '$(srcdir)/gl2.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-gl2.Tpo $(DEPDIR)/3dchuckie-gl2.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gl2.c' object='3dchuckie-gl2.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-gl2.obj `if test -f 'gl2.c'; then $(CYGPATH_W) 'gl2.c'; else $(CYGPATH_W) '$(srcdir)/gl2.c'; fi`
+
+3dchuckie-audio-sdl.o: audio-sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-audio-sdl.o -MD -MP -MF $(DEPDIR)/3dchuckie-audio-sdl.Tpo -c -o 3dchuckie-audio-sdl.o `test -f 'audio-sdl.c' || echo '$(srcdir)/'`audio-sdl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-audio-sdl.Tpo $(DEPDIR)/3dchuckie-audio-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-sdl.c' object='3dchuckie-audio-sdl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-audio-sdl.o `test -f 'audio-sdl.c' || echo '$(srcdir)/'`audio-sdl.c
+
+3dchuckie-audio-sdl.obj: audio-sdl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-audio-sdl.obj -MD -MP -MF $(DEPDIR)/3dchuckie-audio-sdl.Tpo -c -o 3dchuckie-audio-sdl.obj `if test -f 'audio-sdl.c'; then $(CYGPATH_W) 'audio-sdl.c'; else $(CYGPATH_W) '$(srcdir)/audio-sdl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-audio-sdl.Tpo $(DEPDIR)/3dchuckie-audio-sdl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='audio-sdl.c' object='3dchuckie-audio-sdl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-audio-sdl.obj `if test -f 'audio-sdl.c'; then $(CYGPATH_W) 'audio-sdl.c'; else $(CYGPATH_W) '$(srcdir)/audio-sdl.c'; fi`
+
+3dchuckie-sdl-input.o: sdl-input.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-sdl-input.o -MD -MP -MF $(DEPDIR)/3dchuckie-sdl-input.Tpo -c -o 3dchuckie-sdl-input.o `test -f 'sdl-input.c' || echo '$(srcdir)/'`sdl-input.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-sdl-input.Tpo $(DEPDIR)/3dchuckie-sdl-input.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl-input.c' object='3dchuckie-sdl-input.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-sdl-input.o `test -f 'sdl-input.c' || echo '$(srcdir)/'`sdl-input.c
+
+3dchuckie-sdl-input.obj: sdl-input.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-sdl-input.obj -MD -MP -MF $(DEPDIR)/3dchuckie-sdl-input.Tpo -c -o 3dchuckie-sdl-input.obj `if test -f 'sdl-input.c'; then $(CYGPATH_W) 'sdl-input.c'; else $(CYGPATH_W) '$(srcdir)/sdl-input.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-sdl-input.Tpo $(DEPDIR)/3dchuckie-sdl-input.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sdl-input.c' object='3dchuckie-sdl-input.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-sdl-input.obj `if test -f 'sdl-input.c'; then $(CYGPATH_W) 'sdl-input.c'; else $(CYGPATH_W) '$(srcdir)/sdl-input.c'; fi`
+
+3dchuckie-farmer.o: models/farmer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-farmer.o -MD -MP -MF $(DEPDIR)/3dchuckie-farmer.Tpo -c -o 3dchuckie-farmer.o `test -f 'models/farmer.c' || echo '$(srcdir)/'`models/farmer.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-farmer.Tpo $(DEPDIR)/3dchuckie-farmer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/farmer.c' object='3dchuckie-farmer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-farmer.o `test -f 'models/farmer.c' || echo '$(srcdir)/'`models/farmer.c
+
+3dchuckie-farmer.obj: models/farmer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-farmer.obj -MD -MP -MF $(DEPDIR)/3dchuckie-farmer.Tpo -c -o 3dchuckie-farmer.obj `if test -f 'models/farmer.c'; then $(CYGPATH_W) 'models/farmer.c'; else $(CYGPATH_W) '$(srcdir)/models/farmer.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-farmer.Tpo $(DEPDIR)/3dchuckie-farmer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/farmer.c' object='3dchuckie-farmer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-farmer.obj `if test -f 'models/farmer.c'; then $(CYGPATH_W) 'models/farmer.c'; else $(CYGPATH_W) '$(srcdir)/models/farmer.c'; fi`
+
+3dchuckie-duck.o: models/duck.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-duck.o -MD -MP -MF $(DEPDIR)/3dchuckie-duck.Tpo -c -o 3dchuckie-duck.o `test -f 'models/duck.c' || echo '$(srcdir)/'`models/duck.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-duck.Tpo $(DEPDIR)/3dchuckie-duck.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/duck.c' object='3dchuckie-duck.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-duck.o `test -f 'models/duck.c' || echo '$(srcdir)/'`models/duck.c
+
+3dchuckie-duck.obj: models/duck.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-duck.obj -MD -MP -MF $(DEPDIR)/3dchuckie-duck.Tpo -c -o 3dchuckie-duck.obj `if test -f 'models/duck.c'; then $(CYGPATH_W) 'models/duck.c'; else $(CYGPATH_W) '$(srcdir)/models/duck.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-duck.Tpo $(DEPDIR)/3dchuckie-duck.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/duck.c' object='3dchuckie-duck.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-duck.obj `if test -f 'models/duck.c'; then $(CYGPATH_W) 'models/duck.c'; else $(CYGPATH_W) '$(srcdir)/models/duck.c'; fi`
+
+3dchuckie-egg.o: models/egg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-egg.o -MD -MP -MF $(DEPDIR)/3dchuckie-egg.Tpo -c -o 3dchuckie-egg.o `test -f 'models/egg.c' || echo '$(srcdir)/'`models/egg.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-egg.Tpo $(DEPDIR)/3dchuckie-egg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/egg.c' object='3dchuckie-egg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-egg.o `test -f 'models/egg.c' || echo '$(srcdir)/'`models/egg.c
+
+3dchuckie-egg.obj: models/egg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-egg.obj -MD -MP -MF $(DEPDIR)/3dchuckie-egg.Tpo -c -o 3dchuckie-egg.obj `if test -f 'models/egg.c'; then $(CYGPATH_W) 'models/egg.c'; else $(CYGPATH_W) '$(srcdir)/models/egg.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-egg.Tpo $(DEPDIR)/3dchuckie-egg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/egg.c' object='3dchuckie-egg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-egg.obj `if test -f 'models/egg.c'; then $(CYGPATH_W) 'models/egg.c'; else $(CYGPATH_W) '$(srcdir)/models/egg.c'; fi`
+
+3dchuckie-wall.o: models/wall.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-wall.o -MD -MP -MF $(DEPDIR)/3dchuckie-wall.Tpo -c -o 3dchuckie-wall.o `test -f 'models/wall.c' || echo '$(srcdir)/'`models/wall.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-wall.Tpo $(DEPDIR)/3dchuckie-wall.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/wall.c' object='3dchuckie-wall.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-wall.o `test -f 'models/wall.c' || echo '$(srcdir)/'`models/wall.c
+
+3dchuckie-wall.obj: models/wall.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-wall.obj -MD -MP -MF $(DEPDIR)/3dchuckie-wall.Tpo -c -o 3dchuckie-wall.obj `if test -f 'models/wall.c'; then $(CYGPATH_W) 'models/wall.c'; else $(CYGPATH_W) '$(srcdir)/models/wall.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-wall.Tpo $(DEPDIR)/3dchuckie-wall.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/wall.c' object='3dchuckie-wall.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-wall.obj `if test -f 'models/wall.c'; then $(CYGPATH_W) 'models/wall.c'; else $(CYGPATH_W) '$(srcdir)/models/wall.c'; fi`
+
+3dchuckie-ladder.o: models/ladder.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-ladder.o -MD -MP -MF $(DEPDIR)/3dchuckie-ladder.Tpo -c -o 3dchuckie-ladder.o `test -f 'models/ladder.c' || echo '$(srcdir)/'`models/ladder.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-ladder.Tpo $(DEPDIR)/3dchuckie-ladder.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/ladder.c' object='3dchuckie-ladder.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-ladder.o `test -f 'models/ladder.c' || echo '$(srcdir)/'`models/ladder.c
+
+3dchuckie-ladder.obj: models/ladder.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-ladder.obj -MD -MP -MF $(DEPDIR)/3dchuckie-ladder.Tpo -c -o 3dchuckie-ladder.obj `if test -f 'models/ladder.c'; then $(CYGPATH_W) 'models/ladder.c'; else $(CYGPATH_W) '$(srcdir)/models/ladder.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-ladder.Tpo $(DEPDIR)/3dchuckie-ladder.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/ladder.c' object='3dchuckie-ladder.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-ladder.obj `if test -f 'models/ladder.c'; then $(CYGPATH_W) 'models/ladder.c'; else $(CYGPATH_W) '$(srcdir)/models/ladder.c'; fi`
+
+3dchuckie-grain.o: models/grain.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-grain.o -MD -MP -MF $(DEPDIR)/3dchuckie-grain.Tpo -c -o 3dchuckie-grain.o `test -f 'models/grain.c' || echo '$(srcdir)/'`models/grain.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-grain.Tpo $(DEPDIR)/3dchuckie-grain.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/grain.c' object='3dchuckie-grain.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-grain.o `test -f 'models/grain.c' || echo '$(srcdir)/'`models/grain.c
+
+3dchuckie-grain.obj: models/grain.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-grain.obj -MD -MP -MF $(DEPDIR)/3dchuckie-grain.Tpo -c -o 3dchuckie-grain.obj `if test -f 'models/grain.c'; then $(CYGPATH_W) 'models/grain.c'; else $(CYGPATH_W) '$(srcdir)/models/grain.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-grain.Tpo $(DEPDIR)/3dchuckie-grain.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/grain.c' object='3dchuckie-grain.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-grain.obj `if test -f 'models/grain.c'; then $(CYGPATH_W) 'models/grain.c'; else $(CYGPATH_W) '$(srcdir)/models/grain.c'; fi`
 
 chuckie-spritedata.o: spritedata.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-spritedata.o -MD -MP -MF $(DEPDIR)/chuckie-spritedata.Tpo -c -o chuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c
@@ -694,6 +866,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -795,6 +968,11 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 pnd: chuckie-egg.pnd
+
+models/*.c: build_model.py Makefile
+
+.x3d.c:
+	$(srcdir)/build_model.py $< $@
 
 chuckie-egg.pnd: chuckie PXML.xml chuckie.png
 	mkdir -p pnd-tmp

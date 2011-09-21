@@ -1,0 +1,554 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.0//EN" "http://www.web3d.org/specifications/x3d-3.0.dtd">
+<X3D version="3.0" profile="Immersive" xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance" xsd:noNamespaceSchemaLocation="http://www.web3d.org/specifications/x3d-3.0.xsd">
+	<head>
+		<meta name="filename" content="grain.x3d" />
+		<meta name="generator" content="Blender 2.58 (sub 0)" />
+	</head>
+	<Scene>
+		<NavigationInfo headlight="false"
+		                visibilityLimit="0.0"
+		                type='"EXAMINE", "ANY"'
+		                avatarSize="0.25, 1.75, 0.75"
+		                />
+		<Background DEF="WO_World"
+		            groundColor="0.0509 0.0509 0.0509"
+		            skyColor="0.0509 0.0509 0.0509"
+		            />
+		<Transform DEF="Cube.023"
+		           translation="-1 3 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.024">
+					<Shape>
+						<Appearance>
+							<Material DEF="MA_Purple"
+							          diffuseColor="1 0 1"
+							          specularColor="0.401 0.401 0.401"
+							          emissiveColor="0 0 0"
+							          ambientIntensity="0.333"
+							          shininess="0.0977"
+							          transparency="0.0"
+							          />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.022"
+		           translation="1 3 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.023">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.021"
+		           translation="1 -3 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.022">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.020"
+		           translation="-1 -3 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.021">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.017"
+		           translation="-3 -1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.018">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.016"
+		           translation="3 -1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.017">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.015"
+		           translation="0 -2 1"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.016">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.014"
+		           translation="-1 -1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.015">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.013"
+		           translation="1 -1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.014">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.012"
+		           translation="-1 -1 1.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.013">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.011"
+		           translation="1 -1 1.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.012">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.010"
+		           translation="0 2 1"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.011">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.009"
+		           translation="0 0 2"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.010">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.008"
+		           translation="1 1 1.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.009">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.004"
+		           translation="-1 1 1.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.008">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.007"
+		           translation="-2 0 1"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.007">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.006"
+		           translation="0 0 1"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.006">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.005"
+		           translation="2 0 1"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.005">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.003"
+		           translation="3 1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.003">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.002"
+		           translation="1 1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.002">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube.001"
+		           translation="-1 1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube.001">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+		<Transform DEF="Cube"
+		           translation="-3 1 0.5"
+		           scale="1 1 1"
+		           rotation="1 0 0 0"
+		           >
+			<Transform 
+			           translation="0 0 0"
+			           scale="1 1 1"
+			           rotation="1 0 0 0"
+			           >
+				<Group DEF="group_ME_Cube">
+					<Shape>
+						<Appearance>
+							<Material USE="MA_Purple" />
+						</Appearance>
+						<IndexedTriangleSet solid="true"
+						                    index="0 1 2 0 2 3 4 5 6 4 6 7 0 4 7 0 7 1 1 7 6 1 6 2 2 6 5 2 5 3 4 0 3 4 3 5 "
+						                    >
+							<Coordinate point="1 0.5 0 1 -0.5 0 -1.19209e-07 -0.5 0 3.57628e-07 0.5 0 1 0.499999 0.5 5.96046e-08 0.5 0.5 -3.57628e-07 -0.5 0.5 0.999999 -0.500001 0.5 " />
+						</IndexedTriangleSet>
+					</Shape>
+				</Group>
+			</Transform>
+		</Transform>
+	</Scene>
+</X3D>

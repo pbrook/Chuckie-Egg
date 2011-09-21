@@ -4,6 +4,7 @@ chuckie
 chuckie-egg.pnd
 aachuckie
 glchuckie
+3dchuckie
 libchuckie.a
 *.o
 config.h
@@ -12,3 +13,4 @@ config.status
 autom4te.cache
 stamp-h1
 *.swp
+models/*.c

@@ -3,18 +3,22 @@
    This code is licenced under the GNU GPL v3 */
 #include "chuckie.h"
 
+#include <math.h>
 #include <SDL.h>
 #define GL_GLEXT_PROTOTYPES
 
 #include "raster.h"
 #include "model.h"
 
-#define PROJECT_ORTHO
-#define DEPTH 640.0f
+#define DEPTH 1280.0f
 
 static int fullscreen = 0;
 static int scale = 2;
 static int shaders = 1;
+extern int ortho;
+
+extern float rotate_x;
+extern float rotate_y;
 
 raster_hooks *raster = NULL;
 
@@ -129,22 +133,60 @@ static void m_scale(matrix *m, GLfloat x, GLfloat y, GLfloat z)
     }
 }
 
-static void m_project(matrix *m, GLfloat w, GLfloat h, GLfloat n, GLfloat f)
+static void m_rotate_x(matrix *m, GLfloat a)
 {
     memset(m, 0, sizeof(*m));
-#ifdef PROJECT_ORTHO
-    m->c[0].r[0] = 1 / w;
-    m->c[1].r[1] = 1 / h;
-    m->c[2].r[2] = 2.0f / (f - n);
-    m->c[3].r[2] = -(f + n) / (f - n);
+    m->c[0].r[0] = 1.0f;
+    m->c[2].r[1] = sin(a);
+    m->c[1].r[1] = cos(a);
+    m->c[2].r[2] = cos(a);
+    m->c[1].r[2] = -sin(a);
     m->c[3].r[3] = 1.0f;
-#else
-    m->c[0].r[0] = n / w;
-    m->c[1].r[1] = n / h;
-    m->c[2].r[2] = (f + n) / (f - n);
-    m->c[2].r[3] = 1.0f;
-    m->c[3].r[2] = -2.0f * f * n / (f - n);
-#endif
+}
+
+static void m_rotate_y(matrix *m, GLfloat a)
+{
+    memset(m, 0, sizeof(*m));
+    m->c[0].r[0] = cos(a);
+    m->c[2].r[0] = -sin(a);
+    m->c[1].r[1] = 1.0f;
+    m->c[0].r[2] = sin(a);
+    m->c[2].r[2] = cos(a);
+    m->c[3].r[3] = 1.0f;
+}
+
+static void m_rotate_z(matrix *m, GLfloat a)
+{
+    memset(m, 0, sizeof(*m));
+    m->c[0].r[0] = cos(a);
+    m->c[1].r[0] = sin(a);
+    m->c[2].r[2] = 1.0f;
+    m->c[0].r[1] = -sin(a);
+    m->c[1].r[1] = cos(a);
+    m->c[3].r[3] = 1.0f;
+}
+
+static void m_project(matrix *m, GLfloat w, GLfloat h)
+{
+    GLfloat n, f;
+    memset(m, 0, sizeof(*m));
+    if (ortho) {
+	n = -160;
+	f = 160;
+	m->c[0].r[0] = 1 / w;
+	m->c[1].r[1] = 1 / h;
+	m->c[2].r[2] = 2.0f / (f - n);
+	m->c[3].r[2] = -(f + n) / (f - n);
+	m->c[3].r[3] = 1.0f;
+    } else{
+	n = DEPTH - 160;
+	f = DEPTH + 160;
+	m->c[0].r[0] = n / w;
+	m->c[1].r[1] = n / h;
+	m->c[2].r[2] = (f + n) / (f - n);
+	m->c[2].r[3] = 1.0f;
+	m->c[3].r[2] = -2.0f * f * n / (f - n);
+    }
 }
 
 static matrix modelworld;
@@ -231,31 +273,42 @@ static void m_mul(matrix *a, matrix *b, matrix *c)
 /* Transform from model to world coordinates.  */
 static void m_swizzle(matrix *m, int x, int y, int rot)
 {
-    memset(m, 0, sizeof(*m));
+    matrix w;
+    matrix r;
+    matrix tmp;
+
+    memset(&w, 0, sizeof(w));
+
     switch (rot) {
     default:
-	m->c[0].r[0] = 2.0f;
-	m->c[1].r[2] = 2.0f;
+	w.c[0].r[0] = 2.0f;
+	w.c[1].r[2] = 2.0f;
 	break;
     case 1:
-	m->c[1].r[0] = -2.0f;
-	m->c[0].r[2] = 2.0f;
+	w.c[1].r[0] = -2.0f;
+	w.c[0].r[2] = 2.0f;
 	break;
     case 2:
-	m->c[0].r[0] = -2.0f;
-	m->c[1].r[2] = -2.0f;
+	w.c[0].r[0] = -2.0f;
+	w.c[1].r[2] = -2.0f;
 	break;
     case 3:
-	m->c[1].r[0] = 2.0f;
-	m->c[0].r[2] = -2.0f;
+	w.c[1].r[0] = 2.0f;
+	w.c[0].r[2] = -2.0f;
 	break;
     }
-    m->c[2].r[1] = 2.0f;
-    m->c[3].r[3] = 1.0f;
+    w.c[2].r[1] = 2.0f;
+    w.c[3].r[3] = 1.0f;
 
-    m->c[3].r[0] = x * 2 - 160;
-    m->c[3].r[1] = y - 120;
-    m->c[3].r[2] = DEPTH;
+    w.c[3].r[0] = x * 2 - 160;
+    w.c[3].r[1] = y - 120;
+    m_rotate_y(&r, rotate_x);
+    m_mul(&tmp, &r, &w);
+    m_rotate_x(&r, rotate_y);
+    m_mul(m, &r, &tmp);
+    if (!ortho) {
+	m->c[3].r[2] += DEPTH;
+    }
 }
 
 static void RenderGroup(object_group *g)
@@ -415,10 +468,20 @@ void RenderFrame(void)
     int rot;
     sprite_model *model;
 
+    if (!ortho) {
+	rotate_x -= 0.05;
+	rotate_y += 0.005;
+    } else {
+	rotate_x = 0;
+	rotate_y = 0;
+    }
+
     if (skip_frame) {
 	return;
     }
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_project(&projection, 160, 120);
 
     if (shaders) {
 	glUseProgram(program);
@@ -552,7 +615,7 @@ static void InitGL(void)
 {
     GLint program_ok;
 
-    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glClearColor(0, 0, 0, 0);
@@ -581,7 +644,6 @@ static void InitGL(void)
     }
 
     glViewport(0, 0, scale * 320, scale * 240);
-    m_project(&projection, 160, 120, DEPTH - 50.0f, DEPTH + 50.0f);
     if (glGetError() != GL_NO_ERROR) {
 	die("Error initializing OpenGL\n");
     }

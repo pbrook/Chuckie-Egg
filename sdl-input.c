@@ -17,6 +17,10 @@ SDLKey keys[5][6] = {
 
 static uint32_t next_time;
 
+float rotate_x;
+float rotate_y;
+int ortho = 1;
+
 /* Read inputs, and wait until the start of the next frame.  */
 void PollKeys(void)
 {
@@ -57,6 +61,21 @@ void PollKeys(void)
 	  case SDLK_q:
 	      SDL_Quit();
 	      exit(0);
+	  case SDLK_o:
+	      ortho = !ortho;
+	      break;
+	  case SDLK_f:
+	      rotate_x += 0.2;
+	      break;
+	  case SDLK_h:
+	      rotate_x -= 0.2;
+	      break;
+	  case SDLK_t:
+	      rotate_y += 0.2;
+	      break;
+	  case SDLK_g:
+	      rotate_y -= 0.2;
+	      break;
 	  case SDLK_l:
 	      if (event.type == SDL_KEYUP)
 		cheat = 1;

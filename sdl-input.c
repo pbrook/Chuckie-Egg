@@ -30,6 +30,8 @@ void PollKeys(void)
   SDLKey *keylist;
   uint32_t now;
   int32_t delta;
+  static int skipcount;
+  static int framecount;
 
   now = SDL_GetTicks();
   if (next_time == 0)
@@ -37,6 +39,13 @@ void PollKeys(void)
   delta = next_time - now;
   skip_frame = (delta < 0);
   next_time += 30;
+  framecount++;
+  skipcount += skip_frame;
+  if (framecount == 30) {
+      //printf("%d\n", skipcount);
+      framecount = 0;
+      skipcount = 0;
+  }
   while (1) {
       if (skip_frame) {
 	  if (!SDL_PollEvent (&event)) {

@@ -45,11 +45,10 @@ static Uint32 do_timer(Uint32 interval, void *param)
 static const GLchar *vertex_code = " \
 #version 110 \n\
 attribute vec3 position;  \n\
-uniform mat4 world; \n\
 uniform mat4 proj; \n\
 void main() \n\
 { \n\
-    gl_Position = proj * world * vec4(position, 1.0); \n\
+    gl_Position = proj * vec4(position, 1.0); \n\
 } \n\
 ";
 
@@ -311,11 +310,34 @@ static void m_swizzle(matrix *m, int x, int y, int rot)
     }
 }
 
+static float sprite_angle1;
+
 static void RenderGroup(object_group *g)
 {
     matrix prev = eye;
     matrix mat;
+    matrix final;
     object_group *child;
+
+    switch (g->mod) {
+    case 'L':
+	m_rotate_x(&mat, sprite_angle1);
+	break;
+    case 'R':
+	m_rotate_x(&mat, -sprite_angle1);
+	break;
+    case 'U':
+	m_rotate_x(&mat, fabsf(sprite_angle1) / 2.0f);
+	break;
+    case 'D':
+	m_rotate_x(&mat, -fabsf(sprite_angle1) / 2.0f);
+	break;
+    default:
+	m_identity(&mat);
+	break;
+    }
+
+    m_mul(&eye, &prev, &mat);
 
     m_translate(&eye, g->translate[0], g->translate[1], g->translate[2]);
 
@@ -325,12 +347,12 @@ static void RenderGroup(object_group *g)
 
     if (g->ind_count) {
 	m_mul(&mat, &modelworld, &eye);
+	m_mul(&final, &projection, &mat);
 	if (shaders) {
 	    glUniform3f(param_color, g->color[0], g->color[1], g->color[2]);
-	    glUniformMatrix4fv(param_world, 1, GL_FALSE, &mat.c[0].r[0]);
+	    glUniformMatrix4fv(param_proj, 1, GL_FALSE, &final.c[0].r[0]);
 	} else {
-	    glMatrixMode(GL_MODELVIEW);
-	    glLoadMatrixf(&mat.c[0].r[0]);
+	    glLoadMatrixf(&final.c[0].r[0]);
 	    glColor3f(g->color[0], g->color[1], g->color[2]);
 	}
 	glDrawElements(GL_TRIANGLES, g->ind_count, GL_UNSIGNED_SHORT,
@@ -348,8 +370,6 @@ static void RenderSprite(sprite_model *s, int x, int y, int rot)
 	    sizeof(GLfloat) * 3, (void *)0);
 	glEnableVertexAttribArray(attr_position);
     } else {
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(&projection.c[0].r[0]);
 	glVertexPointer(3, GL_FLOAT, sizeof(GLfloat) * 3, (void *)0);
 	glEnableClientState(GL_VERTEX_ARRAY);
     }
@@ -524,6 +544,14 @@ void RenderFrame(void)
 	if (move_y == 0)
 	  n = 0;
     }
+    if (n == 1) {
+	sprite_angle1 = M_PI / 4;
+    } else if (n == 3) {
+	sprite_angle1 = -M_PI / 4;
+    } else {
+	sprite_angle1 = 0.0f;
+    }
+
     RenderSprite(&model_farmer, player_x + 4, player_y - 8, rot);
 
     /* Ducks.  */
@@ -539,10 +567,17 @@ void RenderFrame(void)
 	}
 	switch (duck[n].mode) {
 	case DUCK_BORED:
-	case DUCK_STEP:
+	    sprite_angle1 = 0.0f;
 	    break;
-	default:
+	case DUCK_STEP:
+	    sprite_angle1 = M_PI / 4;
+	    if ((duck[n].x ^ duck[n].y) & 8) {
+		sprite_angle1 = -sprite_angle1;
+	    }
+	    break;
+	default: /* DUCK_EAT[1-4] */
 	    rot = 0;
+	    sprite_angle1 = 0.0f;
 	    break;
 	}
 	RenderSprite(&model_duck, x + 4, duck[n].y - 12, rot);
@@ -639,7 +674,6 @@ static void InitGL(void)
 	}
 	attr_position = glGetAttribLocation(program, "position");
 	param_color = glGetUniformLocation(program, "color");
-	param_world = glGetUniformLocation(program, "world");
 	param_proj = glGetUniformLocation(program, "proj");
     }
 

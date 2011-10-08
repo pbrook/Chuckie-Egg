@@ -312,6 +312,7 @@ static void m_swizzle(matrix *m, int x, int y, int rot)
 }
 
 static float sprite_angle1;
+static float sprite_angle2;
 
 static void RenderGroup(object_group *g)
 {
@@ -327,6 +328,16 @@ static void RenderGroup(object_group *g)
     case 'R':
 	m_rotate_x(&mat, -sprite_angle1);
 	break;
+    case 'B':
+	m_rotate_x(&mat, sprite_angle2 / 2.0f);
+	break;
+    case 'N':
+    case 'l':
+	m_rotate_x(&mat, sprite_angle2);
+	break;
+    case 'r':
+	m_rotate_x(&mat, -sprite_angle2);
+	break;
     case 'U':
 	m_rotate_x(&mat, fabsf(sprite_angle1) / 2.0f);
 	break;
@@ -338,9 +349,9 @@ static void RenderGroup(object_group *g)
 	break;
     }
 
+    m_translate(&mat, g->translate[0], g->translate[1], g->translate[2]);
     m_mul(&eye, &prev, &mat);
 
-    m_translate(&eye, g->translate[0], g->translate[1], g->translate[2]);
 
     for (child = g->child; child; child = child->next) {
 	RenderGroup(child);
@@ -552,6 +563,11 @@ void RenderFrame(void)
     } else {
 	sprite_angle1 = 0.0f;
     }
+    if (rot == 2) {
+	sprite_angle2 = (M_PI / 2) - sprite_angle1;
+    } else {
+	sprite_angle2 = -sprite_angle1;
+    }
 
     RenderSprite(&model_farmer, player_x + 4, player_y - 8, rot);
 
@@ -569,17 +585,26 @@ void RenderFrame(void)
 	switch (duck[n].mode) {
 	case DUCK_BORED:
 	    sprite_angle1 = 0.0f;
+	    sprite_angle2 = 0.0f;
 	    break;
 	case DUCK_STEP:
 	    sprite_angle1 = M_PI / 4;
 	    if ((duck[n].x ^ duck[n].y) & 8) {
 		sprite_angle1 = -sprite_angle1;
 	    }
+	    sprite_angle2 = 0.0f;
 	    break;
-	default: /* DUCK_EAT[1-4] */
-	    rot = 0;
+	case DUCK_EAT2:
+	case DUCK_EAT4:
 	    sprite_angle1 = 0.0f;
+	    sprite_angle2 = -M_PI / 4;
 	    break;
+	case DUCK_EAT3:
+	    sprite_angle1 = 0.0f;
+	    sprite_angle2 = -M_PI / 2;
+	    break;
+	default:
+	    abort();
 	}
 	RenderSprite(&model_duck, x + 4, duck[n].y - 12, rot);
     }

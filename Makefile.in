@@ -65,7 +65,7 @@ am_3dchuckie_OBJECTS = 3dchuckie-spritedata.$(OBJEXT) \
 	3dchuckie-sdl-input.$(OBJEXT) 3dchuckie-farmer.$(OBJEXT) \
 	3dchuckie-duck.$(OBJEXT) 3dchuckie-egg.$(OBJEXT) \
 	3dchuckie-wall.$(OBJEXT) 3dchuckie-ladder.$(OBJEXT) \
-	3dchuckie-grain.$(OBJEXT)
+	3dchuckie-grain.$(OBJEXT) 3dchuckie-lift.$(OBJEXT)
 3dchuckie_OBJECTS = $(am_3dchuckie_OBJECTS)
 am__DEPENDENCIES_1 =
 3dchuckie_DEPENDENCIES = $(am__DEPENDENCIES_1) libchuckie.a
@@ -212,7 +212,7 @@ glchuckie_LDADD = $(SDL_LIBS) libchuckie.a -lGL
 glchuckie_CFLAGS = $(SDL_CFLAGS) $(AM_CFLAGS)
 3dchuckie_SOURCES = spritedata.c gl2.c audio-sdl.c sdl-input.c \
 	models/farmer.x3d models/duck.x3d models/egg.x3d models/wall.x3d \
-	models/ladder.x3d models/grain.x3d
+	models/ladder.x3d models/grain.x3d models/lift.x3d
 
 3dchuckie_LDADD = $(SDL_LIBS) libchuckie.a -lGL
 3dchuckie_CFLAGS = $(SDL_CFLAGS) $(AM_CFLAGS)
@@ -346,6 +346,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-gl2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-grain.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-ladder.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-lift.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-sdl-input.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-spritedata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/3dchuckie-wall.Po@am__quote@
@@ -516,6 +517,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/grain.c' object='3dchuckie-grain.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-grain.obj `if test -f 'models/grain.c'; then $(CYGPATH_W) 'models/grain.c'; else $(CYGPATH_W) '$(srcdir)/models/grain.c'; fi`
+
+3dchuckie-lift.o: models/lift.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-lift.o -MD -MP -MF $(DEPDIR)/3dchuckie-lift.Tpo -c -o 3dchuckie-lift.o `test -f 'models/lift.c' || echo '$(srcdir)/'`models/lift.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-lift.Tpo $(DEPDIR)/3dchuckie-lift.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/lift.c' object='3dchuckie-lift.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-lift.o `test -f 'models/lift.c' || echo '$(srcdir)/'`models/lift.c
+
+3dchuckie-lift.obj: models/lift.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -MT 3dchuckie-lift.obj -MD -MP -MF $(DEPDIR)/3dchuckie-lift.Tpo -c -o 3dchuckie-lift.obj `if test -f 'models/lift.c'; then $(CYGPATH_W) 'models/lift.c'; else $(CYGPATH_W) '$(srcdir)/models/lift.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/3dchuckie-lift.Tpo $(DEPDIR)/3dchuckie-lift.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='models/lift.c' object='3dchuckie-lift.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(3dchuckie_CFLAGS) $(CFLAGS) -c -o 3dchuckie-lift.obj `if test -f 'models/lift.c'; then $(CYGPATH_W) 'models/lift.c'; else $(CYGPATH_W) '$(srcdir)/models/lift.c'; fi`
 
 chuckie-spritedata.o: spritedata.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(chuckie_CFLAGS) $(CFLAGS) -MT chuckie-spritedata.o -MD -MP -MF $(DEPDIR)/chuckie-spritedata.Tpo -c -o chuckie-spritedata.o `test -f 'spritedata.c' || echo '$(srcdir)/'`spritedata.c

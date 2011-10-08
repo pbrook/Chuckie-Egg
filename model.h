@@ -31,5 +31,6 @@ extern sprite_model model_ladder;
 extern sprite_model model_wall;
 extern sprite_model model_egg;
 extern sprite_model model_grain;
+extern sprite_model model_lift;
 
 #endif

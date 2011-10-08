@@ -249,6 +249,7 @@ static void LoadTextures(void)
     LoadModel(&model_wall);
     LoadModel(&model_egg);
     LoadModel(&model_grain);
+    LoadModel(&model_lift);
 }
 
 /* A = B * C */
@@ -583,6 +584,13 @@ void RenderFrame(void)
 	RenderSprite(&model_duck, x + 4, duck[n].y - 12, rot);
     }
 
+    /* Lift.  */
+    if (have_lift) {
+	for (n = 0; n < 2; n++) {
+	    RenderSprite(&model_lift, lift_x + 8, lift_y[n] + 4, 0);
+	}
+    }
+
 #if  0
     RenderScene();
 
@@ -601,13 +609,6 @@ void RenderFrame(void)
     RenderDigit(0x96, y, timer_ticks[1]);
     RenderDigit(0x9b, y, timer_ticks[2]);
 
-
-    /* Lift.  */
-    if (have_lift) {
-	for (n = 0; n < 2; n++) {
-	    RenderSprite(gltex_lift, lift_x, lift_y[n]);
-	}
-    }
 
     /* Big duck.  */
     if (big_duck_dir) {

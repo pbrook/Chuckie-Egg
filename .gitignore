@@ -13,4 +13,6 @@ config.status
 autom4te.cache
 stamp-h1
 *.swp
+*.blend1
+*.blend2
 models/*.c

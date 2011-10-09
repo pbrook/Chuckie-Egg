@@ -32,9 +32,9 @@ class Group(object):
 def findSingleElement(node, name):
     e = node.getElementsByTagName(name)
     if len(e) == 0:
-	Exception("Missing '%s' element" % name);
+	raise Exception("Missing '%s' element" % name);
     if len(e) != 1:
-	Exception("Multiple '%s' elements" % name);
+	raise Exception("Multiple '%s' elements" % name);
     return e[0]
 
 def buildVectors(s):
@@ -106,6 +106,7 @@ class SceneBuilder(object):
 	doc = xml.dom.minidom.parse(f)
 	f.close()
 	scene = findSingleElement(doc, "Scene")
+	print scene
 	this.root = this.newGroup()
 	this.doNodes(this.root, scene)
 

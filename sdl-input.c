@@ -19,7 +19,7 @@ static uint32_t next_time;
 
 float rotate_x;
 float rotate_y;
-int ortho = 1;
+int projection_mode;
 
 /* Read inputs, and wait until the start of the next frame.  */
 void PollKeys(void)
@@ -71,7 +71,20 @@ void PollKeys(void)
 	      SDL_Quit();
 	      exit(0);
 	  case SDLK_o:
-	      ortho = !ortho;
+	      if (event.type == SDL_KEYUP) {
+		  if (projection_mode == 1)
+		    projection_mode = 0;
+	      } else {
+		  projection_mode = 1;
+	      }
+	      break;
+	  case SDLK_i:
+	      if (event.type == SDL_KEYUP) {
+		  if (projection_mode == 2)
+		    projection_mode = 0;
+		  else
+		    projection_mode = 2;
+	      }
 	      break;
 	  case SDLK_f:
 	      rotate_x += 0.2;

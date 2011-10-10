@@ -15,7 +15,7 @@
 static int fullscreen = 0;
 static int scale = 2;
 static int shaders = 1;
-extern int ortho;
+extern int projection_mode;
 
 extern float rotate_x;
 extern float rotate_y;
@@ -169,7 +169,7 @@ static void m_project(matrix *m, GLfloat w, GLfloat h)
 {
     GLfloat n, f;
     memset(m, 0, sizeof(*m));
-    if (ortho) {
+    if (projection_mode == 0) {
 	n = -160;
 	f = 160;
 	m->c[0].r[0] = 1 / w;
@@ -306,7 +306,7 @@ static void m_swizzle(matrix *m, int x, int y, int rot)
     m_mul(&tmp, &r, &w);
     m_rotate_x(&r, rotate_y);
     m_mul(m, &r, &tmp);
-    if (!ortho) {
+    if (projection_mode) {
 	m->c[3].r[2] += DEPTH;
     }
 }
@@ -506,12 +506,17 @@ void RenderFrame(void)
     int rot;
     sprite_model *model;
 
-    if (!ortho) {
+    switch (projection_mode) {
+    case 1:
 	rotate_x -= 0.05;
 	rotate_y += 0.005;
-    } else {
+	break;
+    case 0:
 	rotate_x = 0;
 	rotate_y = 0;
+	break;
+    default:
+	break;
     }
 
     if (skip_frame) {

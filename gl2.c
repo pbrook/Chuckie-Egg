@@ -753,6 +753,8 @@ int main(int argc, const char *argv[])
 
   init_sound();
 
+  init_input();
+
   InitGL();
 
   SDL_AddTimer(30, do_timer, NULL);

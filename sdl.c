@@ -138,6 +138,8 @@ int main(int argc, const char *argv[])
 
   init_sound();
 
+  init_input();
+
   SDL_AddTimer(30, do_timer, NULL);
 
   run_game();

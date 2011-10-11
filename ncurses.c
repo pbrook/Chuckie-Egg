@@ -32,23 +32,23 @@ void PollKeys(void)
     c = getch();
     switch (c) {
     case '.':
-	buttons |= 1;
-	buttons &= ~2;
+	buttons |= BUTTON_RIGHT;
+	buttons &= ~BUTTON_LEFT;
 	break;
     case ',':
-	buttons |= 2;
-	buttons &= ~1;
+	buttons |= BUTTON_LEFT;
+	buttons &= ~BUTTON_RIGHT;
 	break;
     case 'z':
-	buttons |= 4;
-	buttons &= ~8;
+	buttons |= BUTTON_DOWN;
+	buttons &= ~BUTTON_UP;
 	break;
     case 'a':
-	buttons |= 8;
-	buttons &= ~4;
+	buttons |= BUTTON_UP;
+	buttons &= ~BUTTON_DOWN;
 	break;
     case ' ':
-	buttons |= 0x10;
+	buttons |= BUTTON_JUMP;
 	break;
     case 'q':
     case 'Q':

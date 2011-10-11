@@ -118,7 +118,50 @@ void PollKeys(void)
 	      break;
 	  }
 	  break;
+      case SDL_JOYAXISMOTION:
+	  if (event.jaxis.axis == 0) {
+	      buttons &= ~(BUTTON_LEFT | BUTTON_RIGHT);
+	      if (event.jaxis.value < -3200) {
+		  buttons |= BUTTON_LEFT;
+	      } else if (event.jaxis.value > 3200) {
+		  buttons |= BUTTON_RIGHT;
+	      }
+	  } else if (event.jaxis.axis == 1) {
+	      buttons &= ~(BUTTON_UP | BUTTON_DOWN);
+	      if (event.jaxis.value < -3200) {
+		  buttons |= BUTTON_UP;
+	      } else if (event.jaxis.value > 3200) {
+		  buttons |= BUTTON_DOWN;
+	      }
+	  }
+	  break;
+      case SDL_JOYBUTTONDOWN:
+	  /* Don't care which button.  */
+	  buttons |= BUTTON_JUMP;
+	  break;
+      case SDL_JOYBUTTONUP:
+	  buttons &= ~BUTTON_JUMP;
+	  break;
       }
   }
 }
 
+static SDL_Joystick *joystick;
+
+void init_input(void)
+{
+  int err;
+
+  err = SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+  if (err < 0) {
+      printf("SDL_INIT_JOYSTICK failed\n");
+      return;
+  }
+  if (SDL_NumJoysticks() == 0) {
+      printf("No joystick found\n");
+      return;
+  }
+
+  SDL_JoystickEventState(SDL_ENABLE);
+  joystick = SDL_JoystickOpen(0);
+}

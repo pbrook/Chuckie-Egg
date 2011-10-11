@@ -7,6 +7,11 @@
 
 /*** Game interface.  */
 
+#define BUTTON_RIGHT  1
+#define BUTTON_LEFT   2
+#define BUTTON_DOWN   4
+#define BUTTON_UP     8
+#define BUTTON_JUMP   0x10
 extern uint8_t buttons;
 extern uint8_t button_ack;
 extern int cheat;
@@ -26,6 +31,7 @@ extern short next_buffer[BUFSIZE];
 void mix_buffer(void);
 void sound_start(int, int);
 void init_sound(void);
+void init_input(void);
 
 /*** Misc.  */
 extern const uint8_t *const levels[8];

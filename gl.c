@@ -476,6 +476,8 @@ int main(int argc, const char *argv[])
 
   init_sound();
 
+  init_input();
+
   glDisable(GL_DEPTH_TEST);
   glEnable(GL_TEXTURE_2D);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

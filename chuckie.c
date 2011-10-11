@@ -530,16 +530,16 @@ static void MovePlayer(void)
 
   move_x = 0;
   move_y = 0;
-  if (buttons & 0x01) {
+  if (buttons & BUTTON_RIGHT) {
       move_x++;
   }
-  if (buttons & 0x02) {
+  if (buttons & BUTTON_LEFT) {
       move_x--;
   }
-  if (buttons & 0x04) {
+  if (buttons & BUTTON_DOWN) {
       move_y--;
   }
-  if (buttons & 0x08) {
+  if (buttons & BUTTON_UP) {
       move_y++;
   }
   move_y <<= 1;
@@ -578,7 +578,7 @@ static void MovePlayer(void)
       }
       break;
   case PLAYER_CLIMB:
-      if ((buttons & 0x10) != 0) {
+      if ((buttons & BUTTON_JUMP) != 0) {
 	  StartPlayerJump();
 	  break;
       }
@@ -612,7 +612,7 @@ static void MovePlayer(void)
       player_face = 0;
       break;
   case 4: /* On lift */
-      if ((buttons & 0x10) != 0) {
+      if ((buttons & BUTTON_JUMP) != 0) {
 	  StartPlayerJump();
 	  break;
       }
@@ -631,7 +631,7 @@ static void MovePlayer(void)
 	is_dead++;
       break;
   case PLAYER_WALK:
-      if (buttons & 0x10) {
+      if (buttons & BUTTON_JUMP) {
 	  StartPlayerJump();
 	  break;
       }

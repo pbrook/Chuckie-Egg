@@ -11,7 +11,7 @@ chuckie_CFLAGS=$(SDL_CFLAGS) $(AM_CFLAGS)
 
 glchuckie_SOURCES = spritedata.c gl.c audio-sdl.c sdl-input.c
 glchuckie_LDADD=$(SDL_LIBS) libchuckie.a
-glchuckie_CFLAGS=$(SDL_CFLAGS) $(AM_CFLAGS)
+glchuckie_CFLAGS=$(SDL_CFLAGS) $(AM_CFLAGS) -lGL -lm
 
 3dchuckie_SOURCES = spritedata.c gl2.c audio-sdl.c sdl-input.c \
 	models/farmer.x3d models/duck.x3d models/egg.x3d models/wall.x3d \
